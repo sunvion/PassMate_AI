@@ -1,13 +1,35 @@
+"use client";
+
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import {
+  Home,
+  Bot,
+  ClipboardList,
+  User,
+  BookOpen,
+  BarChart3,
+  NotebookTabs,
+  Settings,
+  ChevronRight,
+} from "lucide-react";
 
-export default function Home() {
+export default function HomePage() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
   return (
     <main className="min-h-screen bg-white text-slate-900">
       {/* 상단 헤더 */}
-      <header className="fixed top-0 left-0 z-50 flex h-16 w-full items-center justify-between border-b border-slate-200 bg-white/90 px-8 backdrop-blur">
+      <header className="fixed left-0 top-0 z-50 flex h-16 w-full items-center justify-between border-b border-slate-200 bg-white/90 px-8 backdrop-blur">
         <div className="flex items-center gap-8">
-          <button className="text-2xl">☰</button>
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="text-2xl"
+          >
+            ☰
+          </button>
+
           <Link href="/">
             <div className="flex items-center gap-3 font-bold text-xl">
               <Image
@@ -19,13 +41,130 @@ export default function Home() {
                 priority
               />
               <span>PassMate AI</span>
-            </div></Link>
+            </div>
+          </Link>
         </div>
 
         <button className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow hover:bg-blue-700">
           로그인
         </button>
       </header>
+
+      {/* 메뉴 열렸을 때 배경 어둡게 */}
+      {isMenuOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/40"
+          onClick={() => setIsMenuOpen(false)}
+        />
+      )}
+
+      {/* 사이드 메뉴 */}
+      <aside
+        className={`fixed left-6 top-20 z-40 h-[calc(100vh-6rem)] w-80 rounded-3xl border border-slate-200 bg-white px-6 py-7 shadow-2xl transition-transform duration-300 ${isMenuOpen ? "translate-x-0" : "-translate-x-[120%]"
+          }`}
+      >
+        <div className="mb-10 flex items-center gap-3">
+          <Image
+            src="/images/PM_icon.png"
+            alt="PassMate AI 로고"
+            width={42}
+            height={42}
+            className="rounded-xl"
+          />
+          <span className="text-2xl font-extrabold">PassMate AI</span>
+        </div>
+
+        <nav className="flex flex-col gap-4 text-lg font-semibold">
+          {/* 홈 */}
+          <div>
+            <Link
+              href="/"
+              onClick={() => setIsMenuOpen(false)}
+              className="flex items-center justify-between rounded-2xl bg-blue-50 px-5 py-4 text-blue-600 shadow-sm transition hover:bg-blue-600 hover:text-white hover:shadow-md"
+            >
+              <span className="flex items-center gap-4">
+                <Home size={28} />
+                홈
+              </span>
+              <ChevronRight size={24} />
+            </Link>
+
+            <div className="ml-[68px] mt-3 flex flex-col gap-4 text-base font-medium text-slate-700">
+              <Link
+                href="/stats"
+                onClick={() => setIsMenuOpen(false)}
+                className="hover:text-blue-600"
+              >
+                학습 통계
+              </Link>
+
+              <Link
+                href="/wrong-note"
+                onClick={() => setIsMenuOpen(false)}
+                className="hover:text-blue-600"
+              >
+                오답노트
+              </Link>
+
+              <Link
+                href="/settings"
+                onClick={() => setIsMenuOpen(false)}
+                className="hover:text-blue-600"
+              >
+                설정
+              </Link>
+
+              <Link
+                href="/settings/account"
+                onClick={() => setIsMenuOpen(false)}
+                className="ml-4 text-sm text-slate-500 hover:text-blue-600"
+              >
+                계정 관리
+              </Link>
+            </div>
+          </div>
+
+          {/* 기출문제 */}
+          <div>
+            <Link
+              href="/exams"
+              onClick={() => setIsMenuOpen(false)}
+              className="flex items-center gap-4 rounded-2xl px-5 py-4 transition hover:bg-blue-50 hover:text-blue-600 hover:shadow-md"
+            >
+              <ClipboardList size={28} />
+              기출문제
+            </Link>
+
+            <div className="ml-[68px] mt-3 flex flex-col gap-4 text-base font-medium text-slate-700">
+              <Link
+                href="/exams/full"
+                onClick={() => setIsMenuOpen(false)}
+                className="hover:text-blue-600"
+              >
+                회차별 풀기
+              </Link>
+
+              <Link
+                href="/exams/single"
+                onClick={() => setIsMenuOpen(false)}
+                className="hover:text-blue-600"
+              >
+                한 문제씩 풀기
+              </Link>
+            </div>
+          </div>
+
+          {/* AI 학습 도우미 */}
+          <Link
+            href="/ai-helper"
+            onClick={() => setIsMenuOpen(false)}
+            className="flex items-center gap-4 rounded-2xl px-5 py-4 transition hover:bg-blue-50 hover:text-blue-600 hover:shadow-md"
+          >
+            <Bot size={28} />
+            AI 학습 도우미
+          </Link>
+        </nav>
+      </aside>
 
       {/* 1. 메인 소개 섹션 */}
       <section className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-50 px-10 pt-16">
@@ -99,7 +238,7 @@ export default function Home() {
         </span>
 
         <h2 className="mb-16 text-4xl font-extrabold">
-          PassMAte AI와 함께하는 학습 과정
+          PassMate AI와 함께하는 학습 과정
         </h2>
 
         <div className="grid w-full max-w-6xl grid-cols-5 gap-6 text-center">
