@@ -9,17 +9,17 @@ export default function Home() {
         <div className="flex items-center gap-8">
           <button className="text-2xl">☰</button>
           <Link href="/">
-          <div className="flex items-center gap-3 font-bold text-xl">
-            <Image
-              src="/images/PM_icon.png"
-              alt="PassMate AI 로고"
-              width={45}
-              height={45}
-              className="rounded-lg"
-              priority
-            />
-            <span>PassMate AI</span>
-          </div></Link>
+            <div className="flex items-center gap-3 font-bold text-xl">
+              <Image
+                src="/images/PM_icon.png"
+                alt="PassMate AI 로고"
+                width={45}
+                height={45}
+                className="rounded-lg"
+                priority
+              />
+              <span>PassMate AI</span>
+            </div></Link>
         </div>
 
         <button className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow hover:bg-blue-700">
@@ -30,12 +30,10 @@ export default function Home() {
       {/* 1. 메인 소개 섹션 */}
       <section className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-50 px-10 pt-16">
         <div className="grid w-full max-w-6xl grid-cols-2 items-center gap-16">
-          <div className="ml-30">
-            <span className="mb-5 inline-block rounded-full bg-blue-100 px-4 py-2 text-sm font-bold text-blue-600">
-              AI와 함께
-            </span>
-
+          <div className="ml-28">
             <h1 className="mb-6 text-5xl font-extrabold leading-tight">
+              <span className="text-blue-600">AI와 함께</span>
+              <br />
               합격을 설계하는
               <br />
               <span className="text-blue-600">나만의 학습 파트너</span>
@@ -52,7 +50,7 @@ export default function Home() {
             </button>
           </div>
 
-          <div className="flex justify-center">
+          <div className="flex justify-center translate-y-12">
             <Image
               src="/images/homepage_main.png"
               alt="PassMate AI 메인 이미지"
