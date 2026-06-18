@@ -5,24 +5,22 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   Home,
-  Bot,
+  UserRound,
   ClipboardList,
-  User,
-  BookOpen,
-  BarChart3,
-  NotebookTabs,
-  Settings,
   ChevronRight,
 } from "lucide-react";
 
 export default function HomePage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isWrongNoteOpen, setIsWrongNoteOpen] = useState(false);
+  const [isExamOpen, setIsExamOpen] = useState(false);
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
 
   return (
     <main className="min-h-screen bg-white text-slate-900">
       {/* 상단 헤더 */}
       <header className="fixed left-0 top-0 z-50 flex h-16 w-full items-center justify-between border-b border-slate-200 bg-white/90 px-8 backdrop-blur">
-        <div className="flex items-center gap-8">
+        <div className="flex items-center gap-4 md:gap-8">
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             className="text-2xl"
@@ -40,12 +38,15 @@ export default function HomePage() {
                 className="rounded-lg"
                 priority
               />
-              <span>PassMate AI</span>
+              <span className="hidden md:block">PassMate AI</span>
             </div>
           </Link>
         </div>
 
-        <button className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow hover:bg-blue-700">
+        <button
+          onClick={() => setIsLoginOpen(true)}
+          className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow hover:bg-blue-700"
+        >
           로그인
         </button>
       </header>
@@ -60,21 +61,10 @@ export default function HomePage() {
 
       {/* 사이드 메뉴 */}
       <aside
-        className={`fixed left-6 top-20 z-40 h-[calc(100vh-6rem)] w-80 rounded-3xl border border-slate-200 bg-white px-6 py-7 shadow-2xl transition-transform duration-300 ${isMenuOpen ? "translate-x-0" : "-translate-x-[120%]"
-          }`}
-      >
-        <div className="mb-10 flex items-center gap-3">
-          <Image
-            src="/images/PM_icon.png"
-            alt="PassMate AI 로고"
-            width={42}
-            height={42}
-            className="rounded-xl"
-          />
-          <span className="text-2xl font-extrabold">PassMate AI</span>
-        </div>
+        className={`fixed left-4 top-20 z-40 h-[calc(100vh-6rem)] w-[90vw] max-w-[320px] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl transition-transform duration-300 ${isMenuOpen ? "translate-x-0" : "-translate-x-[120%]"
+          }`}>
 
-        <nav className="flex flex-col gap-4 text-lg font-semibold">
+        <nav className="mt-4 flex flex-col gap-4 px-3 text-lg font-semibold">
           {/* 홈 */}
           <div>
             <Link
@@ -88,6 +78,18 @@ export default function HomePage() {
               </span>
               <ChevronRight size={24} />
             </Link>
+          </div>
+
+          {/* 마이페이지 */}
+          <div>
+            <Link
+              href="/mypage"
+              onClick={() => setIsMenuOpen(false)}
+              className="flex items-center gap-4 rounded-2xl px-5 py-4 transition hover:bg-blue-50 hover:text-blue-600 hover:shadow-md"
+            >
+              <UserRound size={28} />
+              마이페이지
+            </Link>
 
             <div className="ml-[68px] mt-3 flex flex-col gap-4 text-base font-medium text-slate-700">
               <Link
@@ -98,26 +100,44 @@ export default function HomePage() {
                 학습 통계
               </Link>
 
-              <Link
-                href="/wrong-note"
-                onClick={() => setIsMenuOpen(false)}
-                className="hover:text-blue-600"
+              {/* 오답노트 접힘 메뉴 */}
+              <button
+                type="button"
+                onClick={() => setIsWrongNoteOpen(!isWrongNoteOpen)}
+                className="flex items-center justify-between text-left hover:text-blue-600"
               >
-                오답노트
-              </Link>
+                <span>오답노트</span>
+                <ChevronRight
+                  size={18}
+                  className={`transition-transform ${isWrongNoteOpen ? "rotate-90" : ""
+                    }`}
+                />
+              </button>
 
-              <Link
-                href="/settings"
-                onClick={() => setIsMenuOpen(false)}
-                className="hover:text-blue-600"
-              >
-                설정
-              </Link>
+              {isWrongNoteOpen && (
+                <div className="ml-4 flex flex-col gap-3 text-sm text-slate-600">
+                  <Link
+                    href="/wrong-note/ai-helper"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="hover:text-blue-600"
+                  >
+                    AI 학습 도우미
+                  </Link>
+
+                  <Link
+                    href="/wrong-note/review"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="hover:text-blue-600"
+                  >
+                    복습
+                  </Link>
+                </div>
+              )}
 
               <Link
                 href="/settings/account"
                 onClick={() => setIsMenuOpen(false)}
-                className="ml-4 text-sm text-slate-500 hover:text-blue-600"
+                className="hover:text-blue-600"
               >
                 계정 관리
               </Link>
@@ -136,40 +156,48 @@ export default function HomePage() {
             </Link>
 
             <div className="ml-[68px] mt-3 flex flex-col gap-4 text-base font-medium text-slate-700">
-              <Link
-                href="/exams/full"
-                onClick={() => setIsMenuOpen(false)}
-                className="hover:text-blue-600"
+              {/* 회차별 풀기 접힘 메뉴 */}
+              <button
+                type="button"
+                onClick={() => setIsExamOpen(!isExamOpen)}
+                className="flex items-center justify-between text-left hover:text-blue-600"
               >
-                회차별 풀기
-              </Link>
+                <span>회차별 풀기</span>
+                <ChevronRight
+                  size={18}
+                  className={`transition-transform ${isExamOpen ? "rotate-90" : ""
+                    }`}
+                />
+              </button>
 
-              <Link
-                href="/exams/single"
-                onClick={() => setIsMenuOpen(false)}
-                className="hover:text-blue-600"
-              >
-                한 문제씩 풀기
-              </Link>
+              {isExamOpen && (
+                <div className="ml-4 flex flex-col gap-3 text-sm text-slate-600">
+                  <Link
+                    href="/exams/full"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="hover:text-blue-600"
+                  >
+                    전체 회차 풀기
+                  </Link>
+
+                  <Link
+                    href="/exams/single"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="hover:text-blue-600"
+                  >
+                    한 문제씩 풀기
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
-
-          {/* AI 학습 도우미 */}
-          <Link
-            href="/ai-helper"
-            onClick={() => setIsMenuOpen(false)}
-            className="flex items-center gap-4 rounded-2xl px-5 py-4 transition hover:bg-blue-50 hover:text-blue-600 hover:shadow-md"
-          >
-            <Bot size={28} />
-            AI 학습 도우미
-          </Link>
         </nav>
       </aside>
 
       {/* 1. 메인 소개 섹션 */}
       <section className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-50 px-10 pt-16">
-        <div className="grid w-full max-w-6xl grid-cols-2 items-center gap-16">
-          <div className="ml-28">
+        <div className="grid w-full max-w-6xl grid-cols-1 lg:grid-cols-2 items-center gap-16">
+          <div className="mx-auto max-w-xl lg:ml-28">
             <h1 className="mb-6 text-5xl font-extrabold leading-tight">
               <span className="text-blue-600">AI와 함께</span>
               <br />
@@ -184,7 +212,9 @@ export default function HomePage() {
               공무원 시험 합격까지 가장 스마트한 길을 제시합니다.
             </p>
 
-            <button className="rounded-lg bg-blue-600 px-10 py-4 font-bold text-white shadow-lg hover:bg-blue-700">
+            <button
+              onClick={() => setIsLoginOpen(true)}
+              className="rounded-lg bg-blue-600 px-10 py-4 font-bold text-white shadow-lg hover:bg-blue-700">
               지금 시작하기
             </button>
           </div>
@@ -196,7 +226,7 @@ export default function HomePage() {
               width={800}
               height={600}
               priority
-              className="w-full max-w-[720px] object-contain"
+              className="w-full max-w-[720px] object-contain px-4"
             />
           </div>
         </div>
@@ -249,7 +279,83 @@ export default function HomePage() {
           <StepCard number="5" icon="📈" title="취약 유형 복습" />
         </div>
       </section>
-    </main>
+      {isLoginOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
+          {/* 흐려지는 배경 */}
+          <div
+            className="absolute inset-0 bg-black/45 backdrop-blur-sm"
+            onClick={() => setIsLoginOpen(false)}
+          />
+
+          {/* 로그인 모달 */}
+          <div className="relative z-[101] w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl">
+            <button
+              onClick={() => setIsLoginOpen(false)}
+              className="absolute right-5 top-5 text-xl text-slate-400 hover:text-slate-700"
+            >
+              ×
+            </button>
+
+            <div className="mb-6 text-center">
+              <h2 className="text-3xl font-extrabold text-slate-900">
+                로그인 / 회원가입
+              </h2>
+              <p className="mt-3 text-sm leading-6 text-slate-500">
+                Google 계정으로 간편하게 로그인하고
+                <br />
+                PassMate AI 학습을 시작하세요.
+              </p>
+            </div>
+
+            <button className="relative flex w-full items-center rounded-xl border border-slate-300 bg-white px-6 py-4 font-bold text-slate-800 shadow-sm transition hover:bg-slate-50">
+              <Image
+                src="/images/google_logo.png"
+                alt="Google 로고"
+                width={36}
+                height={36}
+              />
+
+              <span className="absolute left-1/2 -translate-x-1/2">
+                Google로 계속하기
+              </span>
+            </button>
+
+            <div className="mt-6 space-y-3 text-sm font-medium text-slate-600">
+              <p className="flex items-center gap-3">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+                  ✓
+                </span>
+                Google 계정으로 안전하게 로그인
+              </p>
+
+              <p className="flex items-center gap-3">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+                  ✓
+                </span>
+                처음이신가요? 자동으로 회원가입이 진행돼요
+              </p>
+            </div>
+
+            <div className="mt-8 rounded-2xl bg-blue-50 p-5">
+              <p className="font-bold text-slate-800">안심하고 사용하세요</p>
+
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                개인정보는 안전하게 보호되며,
+                <br />
+                Google 계정 정보는 로그인 용도로만 사용됩니다.
+              </p>
+            </div>
+
+            <p className="mt-8 text-center text-xs leading-5 text-slate-400">
+              계속하면 서비스 이용약관 및 개인정보 처리방침에
+              <br />
+              동의하는 것으로 간주됩니다.
+            </p>
+          </div>
+        </div>
+  )
+}
+    </main >
   );
 }
 
