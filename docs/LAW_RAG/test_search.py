@@ -80,7 +80,7 @@ def search_law(query, top_k=5):
 # 테스트
 # ====================================
 
-query = "어린이 보호구역에서 사고쳤어"
+query = "교차로 좌회전"
 
 results = search_law(query)
 
