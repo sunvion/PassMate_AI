@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import {
   Home,
@@ -15,8 +16,17 @@ type SidebarProps = {
 };
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
+  const pathname = usePathname();
+
   const [isWrongNoteOpen, setIsWrongNoteOpen] = useState(false);
   const [isExamOpen, setIsExamOpen] = useState(false);
+
+  const activeMenuClass = "bg-blue-50 text-blue-600 shadow-sm";
+  const defaultMenuClass = "text-slate-900 hover:bg-blue-50 hover:text-blue-600 shadow-sm"
+
+  const isHomeActive = pathname === "/";
+  const isMypageActive = pathname.startsWith("/mypage");
+  const isExamActive = pathname.startsWith("/exam");
 
   return (
     <>
@@ -28,16 +38,16 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       )}
 
       <aside
-        className={`fixed left-4 top-20 z-40 h-[calc(100vh-6rem)] w-[90vw] max-w-[320px] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl transition-transform duration-300 ${
-          isOpen ? "translate-x-0" : "-translate-x-[120%]"
-        }`}
+        className={`fixed left-4 top-20 z-40 h-[calc(100vh-6rem)] w-[90vw] max-w-[320px] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl transition-transform duration-300 ${isOpen ? "translate-x-0" : "-translate-x-[120%]"
+          }`}
       >
         <nav className="mt-4 flex flex-col gap-4 px-3 text-lg font-semibold">
           <div>
             <Link
               href="/"
               onClick={onClose}
-              className="flex items-center justify-between rounded-2xl bg-blue-50 px-5 py-4 text-blue-600 shadow-sm transition hover:bg-blue-600 hover:text-white hover:shadow-md"
+              className={`flex items-center justify-between rounded-2xl px-5 py-4 transition 
+                ${isHomeActive ? activeMenuClass : defaultMenuClass}`}
             >
               <span className="flex items-center gap-4">
                 <Home size={28} />
@@ -51,14 +61,16 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             <Link
               href="/mypage"
               onClick={onClose}
-              className="flex items-center gap-4 rounded-2xl px-5 py-4 transition hover:bg-blue-50 hover:text-blue-600 hover:shadow-md"
+              className={`flex items-center gap-4 rounded-2xl px-5 py-4 transition 
+                ${isMypageActive ? activeMenuClass : defaultMenuClass}`}
             >
               <UserRound size={28} />
               마이페이지
             </Link>
 
             <div className="ml-[68px] mt-3 flex flex-col gap-4 text-base font-medium text-slate-700">
-              <Link href="/mypage" onClick={onClose} className="hover:text-blue-600">
+              <Link href="/mypage" onClick={onClose}
+                className={`${pathname === "/mypage" ? "font-bold text-blue-600" : "hover:text-blue-600"}`}>
                 학습 통계
               </Link>
 
@@ -70,9 +82,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 <span>오답노트</span>
                 <ChevronRight
                   size={18}
-                  className={`transition-transform ${
-                    isWrongNoteOpen ? "rotate-90" : ""
-                  }`}
+                  className={`transition-transform ${isWrongNoteOpen ? "rotate-90" : ""
+                    }`}
                 />
               </button>
 
@@ -110,7 +121,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             <Link
               href="/exams"
               onClick={onClose}
-              className="flex items-center gap-4 rounded-2xl px-5 py-4 transition hover:bg-blue-50 hover:text-blue-600 hover:shadow-md"
+              className={`flex items-center gap-4 rounded-2xl px-5 py-4 transition 
+                ${isExamActive ? activeMenuClass : defaultMenuClass}`}
             >
               <ClipboardList size={28} />
               기출문제
@@ -125,9 +137,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 <span>회차별 풀기</span>
                 <ChevronRight
                   size={18}
-                  className={`transition-transform ${
-                    isExamOpen ? "rotate-90" : ""
-                  }`}
+                  className={`transition-transform ${isExamOpen ? "rotate-90" : ""
+                    }`}
                 />
               </button>
 

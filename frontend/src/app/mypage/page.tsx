@@ -7,10 +7,11 @@ import Sidebar from "../../components/Sidebar";
 
 import {
   BarChart3,
+  ChevronDown,
   ClipboardList,
   RotateCcw,
   Sparkles,
-  Target,
+  Target
 } from "lucide-react";
 
 const subjects = [
@@ -22,9 +23,9 @@ const subjects = [
       "데이터베이스",
       "자료 구조",
       "프로그래밍 언어론",
-      "소프트웨어 공학 및 시스템 설계",
-      "데이터 통신과 네트워크",
-      "인터넷 및 최신 기술 용어",
+      "소프트웨어 공학 및\n 시스템 설계",
+      "데이터 통신과\n 네트워크",
+      "인터넷 및\n 최신 기술 용어",
     ],
   },
   {
@@ -41,7 +42,7 @@ const subjects = [
     ],
   },
   {
-    name: "운전면허",
+    name: "운전면허 필기시험",
     areas: ["교통법규", "안전운전", "도로표지", "응급처치", "차량관리"],
   },
 ];
@@ -51,29 +52,66 @@ export default function MyPage() {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
   const [selectedSubject, setSelectedSubject] = useState(0);
+  const [isSubjectOpen, setIsSubjectOpen] = useState(false);
   const [values, setValues] = useState<number[]>([]);
+  const [displayValues, setDisplayValues] = useState<number[]>([]);
   const [expectedScore, setExpectedScore] = useState(72);
 
   const current = subjects[selectedSubject];
 
   useEffect(() => {
     const makeRandomValues = () => {
-      setValues(current.areas.map(() => Math.floor(Math.random() * 35) + 45));
+      const nextValues = current.areas.map(
+        () => Math.floor(Math.random() * 35) + 45
+      );
+
+      setValues(nextValues);
       setExpectedScore(Math.floor(Math.random() * 20) + 65);
     };
 
     makeRandomValues();
 
-    const timer = setInterval(() => {
-      makeRandomValues();
-    }, 1500);
+    const timer = setInterval(makeRandomValues, 1800);
 
     return () => clearInterval(timer);
   }, [selectedSubject, current.areas]);
 
-  const polygonPoints = values
+  useEffect(() => {
+    if (values.length === 0) return;
+
+    if (displayValues.length !== values.length) {
+      setDisplayValues(values);
+      return;
+    }
+
+    const startValues = [...displayValues];
+    const endValues = [...values];
+    const duration = 700;
+    const startTime = performance.now();
+
+    const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
+
+    const animate = (now: number) => {
+      const progress = Math.min((now - startTime) / duration, 1);
+      const eased = easeOutCubic(progress);
+
+      const next = startValues.map((start, index) => {
+        return start + (endValues[index] - start) * eased;
+      });
+
+      setDisplayValues(next);
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      }
+    };
+
+    requestAnimationFrame(animate);
+  }, [values]);
+
+  const polygonPoints = displayValues
     .map((value, index) => {
-      const angle = (Math.PI * 2 * index) / values.length - Math.PI / 2;
+      const angle = (Math.PI * 2 * index) / displayValues.length - Math.PI / 2;
       const radius = value * 1.15;
       const x = 150 + Math.cos(angle) * radius;
       const y = 150 + Math.sin(angle) * radius;
@@ -103,45 +141,69 @@ export default function MyPage() {
           <div className="mb-8 flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold">
-                마이페이지 <span className="text-slate-400">›</span> 학습 통계
+                기출문제 학습 통계
               </h1>
               <p className="mt-2 text-slate-500">
                 아직 학습 데이터가 없어요. 문제를 풀면 나만의 학습 통계가 생성됩니다.
               </p>
             </div>
-
-            <p className="text-sm text-slate-500">
-              추후 OAuth 연동 후 프로필 영역으로 변경 예정
-            </p>
           </div>
 
-          <div className="mb-6 grid grid-cols-3 overflow-hidden rounded-2xl border border-slate-200 bg-white">
-            {subjects.map((subject, index) => {
-              const isSelected = selectedSubject === index;
+          <div className="relative mb-6">
+            <button
+              onClick={() => setIsSubjectOpen(!isSubjectOpen)}
+              className="group flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-6 py-5 text-left shadow-sm transition-all duration-300 hover:border-blue-200 hover:shadow-md"
+            >
+              <div>
+                <p className="text-xs font-medium text-slate-400">선택된 시험</p>
+                <p className="text-lg font-bold text-slate-800">
+                  {current.name}
+                </p>
+              </div>
 
-              return (
-                <button
-                  key={subject.name}
-                  onClick={() => setSelectedSubject(index)}
-                  className={`relative py-5 text-lg font-semibold transition
-          ${isSelected
-                      ? "border-t-4 border-blue-600 bg-gradient-to-b from-blue-100 to-white text-blue-600"
-                      : "text-slate-700 hover:bg-slate-50"
-                    }
-          ${index !== subjects.length - 1 ? "border-r border-slate-200" : ""}
-        `}
-                >
-                  {subject.name}
-                </button>
-              );
-            })}
+              <div
+                className={`flex h-10 w-10 items-center justify-center rounded-full transition-all duration-300
+      ${isSubjectOpen
+                    ? "rotate-180 bg-blue-100 text-blue-600 shadow-sm"
+                    : "bg-slate-100 text-slate-500 group-hover:bg-blue-50 group-hover:text-blue-500"
+                  }`}
+              >
+                <ChevronDown size={20} strokeWidth={2.5} />
+              </div>
+            </button>
+
+            {isSubjectOpen && (
+              <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg">
+                {subjects.map((subject, index) => {
+                  const isSelected = selectedSubject === index;
+
+                  return (
+                    <button
+                      key={subject.name}
+                      onClick={() => {
+                        setSelectedSubject(index);
+                        setIsSubjectOpen(false);
+                      }}
+                      className={`w-full px-6 py-4 text-left font-semibold transition
+              ${isSelected
+                          ? "bg-blue-50 text-blue-600"
+                          : "text-slate-700 hover:bg-slate-50"
+                        }
+            `}
+                    >
+                      {subject.name}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-6">
             <article className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
               <div className="mb-6 flex items-center justify-between">
                 <h2 className="text-2xl font-bold">
-                  {current.areas.length}개 단원별 예상 정답률
+                  {current.areas.length}개 단원별 정답률
                 </h2>
 
                 <span className="rounded-full bg-blue-50 px-3 py-1 text-sm font-semibold text-blue-600">
@@ -150,8 +212,8 @@ export default function MyPage() {
               </div>
 
               <div className="flex justify-center">
-                <svg width="470" height="390" viewBox="0 0 300 300">
-                  {[45, 85, 120].map((r) => (
+                <svg width="520" height="450" viewBox="-30 -30 360 360">
+                  {[40, 75, 105].map((r) => (
                     <circle
                       key={r}
                       cx="150"
@@ -167,10 +229,14 @@ export default function MyPage() {
                       (Math.PI * 2 * index) / current.areas.length -
                       Math.PI / 2;
 
-                    const lineX = 150 + Math.cos(angle) * 120;
-                    const lineY = 150 + Math.sin(angle) * 120;
-                    const textX = 150 + Math.cos(angle) * 150;
-                    const textY = 150 + Math.sin(angle) * 150;
+                    const lineX = 150 + Math.cos(angle) * 105;
+                    const lineY = 150 + Math.sin(angle) * 105;
+
+                    const isTopOrBottom = index === 0 || index === current.areas.length / 2;
+                    const labelRadius = isTopOrBottom ? 140 : 145;
+
+                    const textX = 150 + Math.cos(angle) * labelRadius;
+                    const textY = 150 + Math.sin(angle) * labelRadius;
 
                     return (
                       <g key={area}>
@@ -186,10 +252,17 @@ export default function MyPage() {
                           x={textX}
                           y={textY}
                           textAnchor="middle"
-                          dominantBaseline="middle"
-                          className="fill-slate-700 text-[8px] font-semibold"
+                          className="fill-slate-700 text-[11px] font-bold"
                         >
-                          {area.length > 10 ? area.slice(0, 10) + "..." : area}
+                          {area.split("\n").map((line, i) => (
+                            <tspan
+                              key={i}
+                              x={textX}
+                              dy={i === 0 ? 0 : 12}
+                            >
+                              {line}
+                            </tspan>
+                          ))}
                         </text>
                       </g>
                     );
@@ -200,15 +273,14 @@ export default function MyPage() {
                     fill="rgba(37, 99, 235, 0.18)"
                     stroke="#2563eb"
                     strokeWidth="2"
-                    style={{
-                      transition: "points 500ms ease",
-                    }}
                   />
 
-                  {values.map((value, index) => {
+                  {displayValues.map((value, index) => {
                     const angle =
-                      (Math.PI * 2 * index) / values.length - Math.PI / 2;
+                      (Math.PI * 2 * index) / displayValues.length - Math.PI / 2;
+
                     const radius = value * 1.15;
+
                     const x = 150 + Math.cos(angle) * radius;
                     const y = 150 + Math.sin(angle) * radius;
 
@@ -219,9 +291,6 @@ export default function MyPage() {
                         cy={y}
                         r="4"
                         fill="#2563eb"
-                        style={{
-                          transition: "cx 500ms ease, cy 500ms ease",
-                        }}
                       />
                     );
                   })}
@@ -230,10 +299,10 @@ export default function MyPage() {
 
               <div className="mt-4 rounded-2xl bg-blue-50 p-5 text-center">
                 <p className="font-bold text-blue-600">
-                  문제를 풀면 실제 데이터로 학습 통계가 채워집니다.
+                  문제를 풀면 실제 데이터로 <br /> 학습 통계가 채워집니다.
                 </p>
                 <p className="mt-1 text-sm text-slate-600">
-                  단원별 정답률, 취약 영역, 복습 우선순위를 확인할 수 있어요.
+                  단원별 정답률, 약점 단원, 복습 우선순위<br />를 확인할 수 있어요.
                 </p>
               </div>
             </article>
@@ -249,7 +318,7 @@ export default function MyPage() {
                 </p>
 
                 <p className="mt-2 text-slate-500">
-                  첫 문제를 풀면 최근 응시 기록과 예상 점수가 표시됩니다.
+                  첫 문제를 풀면 최근 응시 기록과 <br /> 예상 점수가 표시됩니다.
                 </p>
 
                 <div className="mt-6 text-6xl font-black text-blue-600">
