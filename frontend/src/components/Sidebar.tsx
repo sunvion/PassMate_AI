@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { MouseEvent } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import {
@@ -13,9 +14,10 @@ import {
 type SidebarProps = {
   isOpen: boolean;
   onClose: () => void;
+  isLoggedIn?: boolean;
 };
 
-export default function Sidebar({ isOpen, onClose }: SidebarProps) {
+export default function Sidebar({ isOpen, onClose, isLoggedIn = false, }: SidebarProps) {
   const pathname = usePathname();
 
   const [isWrongNoteOpen, setIsWrongNoteOpen] = useState(false);
@@ -26,7 +28,25 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   const isHomeActive = pathname === "/";
   const isMypageActive = pathname.startsWith("/mypage") || pathname.startsWith("/setting");
-  const isExamActive = pathname.startsWith("/exam");
+  const isExamActive = pathname.startsWith("/exams");
+
+  const isDev = process.env.NODE_ENV === "development";
+  const canAccess = isLoggedIn || isDev;
+
+  const handleProtectedClick = (e: MouseEvent<HTMLAnchorElement>) => {
+    if (canAccess) {
+      onClose();
+      return;
+    }
+
+    e.preventDefault();
+
+    document.getElementById("start-section")?.scrollIntoView({
+      behavior: "smooth",
+    });
+
+    onClose();
+  };
 
   return (
     <>
@@ -60,7 +80,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           <div>
             <Link
               href="/mypage"
-              onClick={onClose}
+              onClick={handleProtectedClick}
               className={`flex items-center gap-4 rounded-2xl px-5 py-4 transition 
                 ${isMypageActive ? activeMenuClass : defaultMenuClass}`}
             >
@@ -69,7 +89,9 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             </Link>
 
             <div className="ml-[68px] mt-3 flex flex-col gap-4 text-base font-medium text-slate-700">
-              <Link href="/mypage" onClick={onClose}
+              <Link
+                href="/mypage"
+                onClick={handleProtectedClick}
                 className={`${pathname === "/mypage" ? "font-bold text-blue-600" : "hover:text-blue-600"}`}>
                 학습 통계
               </Link>
@@ -90,8 +112,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               {isWrongNoteOpen && (
                 <div className="ml-4 flex flex-col gap-3 text-sm text-slate-600">
                   <Link
-                    href="/wrong-note/ai-helper"
-                    onClick={onClose}
+                    href="/mypage"
+                    onClick={handleProtectedClick}
                     className="hover:text-blue-600"
                   >
                     AI 학습 도우미
@@ -99,7 +121,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
                   <Link
                     href="/wrong-note/review"
-                    onClick={onClose}
+                    onClick={handleProtectedClick}
                     className="hover:text-blue-600"
                   >
                     복습
@@ -109,10 +131,10 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
               <Link
                 href="/setting"
-                onClick={onClose}
+                onClick={handleProtectedClick}
                 className={`${pathname.startsWith("/setting")
-                    ? "font-bold text-blue-600"
-                    : "hover:text-blue-600"
+                  ? "font-bold text-blue-600"
+                  : "hover:text-blue-600"
                   }`}
               >
                 계정 관리
@@ -123,7 +145,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           <div>
             <Link
               href="/exams"
-              onClick={onClose}
+              onClick={handleProtectedClick}
               className={`flex items-center gap-4 rounded-2xl px-5 py-4 transition 
                 ${isExamActive ? activeMenuClass : defaultMenuClass}`}
             >
@@ -147,11 +169,17 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
               {isExamOpen && (
                 <div className="ml-4 flex flex-col gap-3 text-sm text-slate-600">
-                  <Link href="/exams/full" onClick={onClose} className="hover:text-blue-600">
+                  <Link
+                    href="/exams/full"
+                    onClick={handleProtectedClick}
+                    className="hover:text-blue-600">
                     전체 회차 풀기
                   </Link>
 
-                  <Link href="/exams/single" onClick={onClose} className="hover:text-blue-600">
+                  <Link
+                    href="/exams/single"
+                    onClick={handleProtectedClick}
+                    className="hover:text-blue-600">
                     한 문제씩 풀기
                   </Link>
                 </div>
