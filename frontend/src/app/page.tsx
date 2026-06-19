@@ -135,6 +135,7 @@ function FeatureCard({
   );
 }
 
+// 혹시 아래쪽에 StepCard 컴포넌트 선언이 누락되어 있을 수 있어 추가해 둡니다.
 function StepCard({
   number,
   icon,
@@ -145,12 +146,12 @@ function StepCard({
   title: string;
 }) {
   return (
-    <div className="relative rounded-2xl bg-white p-6 shadow-md">
-      <div className="absolute -top-4 left-1/2 flex h-8 w-8 -translate-x-1/2 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white">
+    <div className="rounded-xl border border-slate-100 bg-white p-6 shadow-sm">
+      <div className="mx-auto mb-3 flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 font-bold text-white text-sm">
         {number}
       </div>
-      <div className="mb-5 mt-4 text-5xl">{icon}</div>
-      <h3 className="font-bold">{title}</h3>
+      <div className="mb-2 text-4xl">{icon}</div>
+      <h3 className="font-semibold text-slate-800">{title}</h3>
     </div>
   );
 }
