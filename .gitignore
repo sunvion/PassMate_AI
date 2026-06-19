@@ -6,3 +6,5 @@ backend/__pycache__/
 backend/.pytest_cache/
 *.env*
 pass_cert_backup.sql
+**/__pycache__/
+*.pyc
