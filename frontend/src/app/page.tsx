@@ -91,7 +91,7 @@ export default function HomePage() {
           <FeatureCard
             icon="📊"
             title="약점 유형 분석"
-            desc="자주 틀리는 단원과 유형을 분석해 학습 우선순위를 제안합니다."
+            desc="자주 틀리는 단원 and 유형을 분석해 학습 우선순위를 제안합니다."
           />
         </div>
       </section>

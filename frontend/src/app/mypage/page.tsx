@@ -361,15 +361,19 @@ export default function MyPage() {
 
               <div className="mt-6 grid grid-cols-2 gap-4">
                 <div className="rounded-2xl border border-slate-200 p-5 text-center">
-                  <Target className="mx-auto mb-2 text-blue-600" />
-                  <p className="text-sm text-slate-500">예상 정답률</p>
-                  <p className="text-2xl font-bold">{averageRate}%</p>
+                  <article>
+                    <Target className="mx-auto mb-2 text-blue-600" />
+                    <p className="text-sm text-slate-500">예상 정답률</p>
+                    <p className="text-2xl font-bold">{averageRate}%</p>
+                  </article>
                 </div>
 
                 <div className="rounded-2xl border border-slate-200 p-5 text-center">
-                  <RotateCcw className="mx-auto mb-2 text-blue-600" />
-                  <p className="text-sm text-slate-500">복습 필요 단원</p>
-                  <p className="text-2xl font-bold">0개</p>
+                  <article>
+                    <RotateCcw className="mx-auto mb-2 text-blue-600" />
+                    <p className="text-sm text-slate-500">복습 필요 단원</p>
+                    <p className="text-2xl font-bold">0개</p>
+                  </article>
                 </div>
               </div>
 

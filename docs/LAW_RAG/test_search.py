@@ -22,7 +22,7 @@ client = OpenAI(
 with open(
     "road_traffic_law_embedding.json",
     "r",
-    encoding="utf-8"
+    "utf-8"
 ) as f:
     docs = json.load(f)
 
@@ -80,8 +80,9 @@ def search_law(query, top_k=5):
 # 테스트 (충돌 해결: 두 질문 모두 보존)
 # ====================================
 
+# 테스트하고 싶은 질문의 주석(#)을 해제하고 사용하세요.
 query = "어린이 보호구역에서 사고쳤어"  # 내 테스트 질문
-# query = "교차로 좌회전"              # 원격 dev 브랜치 테스트 질문
+# query = "교차로 좌회전"               # 원격 dev 브랜치 테스트 질문
 
 results = search_law(query)
 
