@@ -1,10 +1,30 @@
-# .gitignore 파일 내용
+# Dependencies & Frameworks
+/node_modules
 frontend/node_modules/
 frontend/.next/
 frontend/out/
+/build
+/.next/
+/out/
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Env & Security
+*.env*
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Database backups
+pass_cert_backup.sql
+
+# Python Cache & Testing
 backend/__pycache__/
 backend/.pytest_cache/
-*.env*
-pass_cert_backup.sql
 **/__pycache__/
 *.pyc

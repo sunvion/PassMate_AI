@@ -14,7 +14,7 @@ import {
 type SidebarProps = {
   isOpen: boolean;
   onClose: () => void;
-  isLoggedIn?: boolean; // 상위 컴포넌트에서 전달하는 로그인 여부 프롭스 반영
+  isLoggedIn?: boolean;
 };
 
 export default function Sidebar({ isOpen, onClose, isLoggedIn = false, }: SidebarProps) {
@@ -27,12 +27,12 @@ export default function Sidebar({ isOpen, onClose, isLoggedIn = false, }: Sideba
 
   const isHomeActive = pathname === "/";
   const isMypageActive = pathname.startsWith("/mypage") || pathname.startsWith("/setting");
-  const isExamActive = pathname.startsWith("/exams"); // 최신 경로인 /exams 기반 매칭 유지
+  const isExamActive = pathname.startsWith("/exams"); // 최신 경로 명세 수용
 
   const isDev = process.env.NODE_ENV === "development";
   const canAccess = isLoggedIn || isDev;
 
-  // 비로그인 유저가 접근할 때 메인 로그인 섹션으로 가이드하는 인터셉터 함수 (상대방 코드 수용)
+  // 비로그인 접근 시 메인 로그인 유도 섹션으로 스크롤시키는 방어용 함수 수용
   const handleProtectedClick = (e: MouseEvent<HTMLAnchorElement>) => {
     if (canAccess) {
       onClose();
@@ -41,7 +41,6 @@ export default function Sidebar({ isOpen, onClose, isLoggedIn = false, }: Sideba
 
     e.preventDefault();
 
-    // 메인화면의 로그인 유도 영역으로 부드럽게 스크롤
     document.getElementById("start-section")?.scrollIntoView({
       behavior: "smooth",
     });

@@ -81,7 +81,7 @@ def search_law(query, top_k=5):
 # ====================================
 
 query = "어린이 보호구역에서 사고쳤어"  # 내 테스트 질문
-# query = "교차로 좌회전"              # dev 브랜치 테스트 질문
+# query = "교차로 좌회전"              # 원격 dev 브랜치 테스트 질문
 
 results = search_law(query)
 

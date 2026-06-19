@@ -58,7 +58,7 @@ export default function MyPage() {
   const [expectedScore, setExpectedScore] = useState(72);
 
   const current = subjects[selectedSubject];
-  const hasStudyData = false; // 상대방이 추가한 데이터 유무 플래그 유지
+  const hasStudyData = false; // 원격 dev 브랜치에서 추가된 플래그 수용
 
   useEffect(() => {
     const makeRandomValues = () => {

@@ -8,11 +8,10 @@ interface LoginModalProps {
 
 export default function LoginModal({ onClose }: LoginModalProps) {
   
-  // 🔥 보안 에러를 유발하는 팝업 대신 직접 구글 로그인 주소로 이동시킵니다. (직접 연동 방식 유지)
+  // 🔥 [보안/인앱 브라우저 대응] 팝업 차단 예외가 없는 표준 리디렉션 방식을 유지합니다.
   const handleGoogleLogin = () => {
     const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
     
-    // 구글 콘솔 및 백엔드 .env와 완벽히 일치해야 하는 자격 증명 파라미터들
     const params = {
       client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "본인의_구글_클라이언트_ID_입력",
       redirect_uri: "http://localhost:8000/api/v1/auth/callback/google",
@@ -23,8 +22,6 @@ export default function LoginModal({ onClose }: LoginModalProps) {
     };
 
     const queryString = new URLSearchParams(params).toString();
-    
-    // 브라우저 화면 자체를 구글 로그인 페이지로 깔끔하게 리디렉션
     window.location.href = `${GOOGLE_AUTH_URL}?${queryString}`;
   };
 
@@ -59,12 +56,12 @@ export default function LoginModal({ onClose }: LoginModalProps) {
           </p>
         </div>
 
-        {/* 리디렉션 핸들러를 바인딩한 최종 안정화 버튼 */}
+        {/* 직접 연동 핸들러를 바인딩한 최종 버튼 */}
         <button 
           type="button"
           onClick={(e) => {
             e.preventDefault();
-            handleGoogleLogin(); // 직접 연동 함수 호출
+            handleGoogleLogin();
           }}
           className="relative flex w-full items-center rounded-xl border border-slate-300 bg-white px-6 py-4 font-bold text-slate-800 shadow-sm transition hover:bg-slate-50"
         >
