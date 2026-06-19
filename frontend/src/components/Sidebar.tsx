@@ -153,7 +153,7 @@ export default function Sidebar({ isOpen, onClose, isLoggedIn = false, }: Sideba
 
             <div className="ml-[68px] mt-3 flex flex-col gap-4 text-base font-medium text-slate-700">
               <Link
-                href="/exams/full"
+                href="/exam/full"
                 onClick={handleProtectedClick}
                 className={`${pathname === "/exams/full"
                     ? "font-bold text-blue-600"
@@ -164,7 +164,7 @@ export default function Sidebar({ isOpen, onClose, isLoggedIn = false, }: Sideba
               </Link>
 
               <Link
-                href="/exams/single"
+                href="/exam/single"
                 onClick={handleProtectedClick}
                 className={`${pathname === "/exams/single"
                     ? "font-bold text-blue-600"
