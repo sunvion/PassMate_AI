@@ -135,7 +135,6 @@ function FeatureCard({
   );
 }
 
-// 혹시 아래쪽에 StepCard 컴포넌트 선언이 누락되어 있을 수 있어 추가해 둡니다.
 function StepCard({
   number,
   icon,
