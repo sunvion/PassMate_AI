@@ -1,28 +1,29 @@
-from sqlalchemy.orm import Session
-from typing import Optional
-from app.models.user import User  # 앞서 작성한 SQLAlchemy User 모델
-import uuid
+# backend/app/crud/user.py
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+from app.models.user import User
 
-
-def get_user_by_email(db: Session, email: str) -> Optional[User]:
+async def get_user_by_email(db: AsyncSession, email: str):
     """
-    기능: 회원 가입 여부를 판단하기 위해 DB에 이메일이 존재하는지 조회합니다. 
-    매개변수: db (SQLAlchemy 세션 객체), email (조회할 이메일 주소) 
+    이메일로 유저 단건 조회 (비동기 방식)
     """
-    return db.query(User).filter(User.email == email).first()
+    result = await db.execute(select(User).filter(User.email == email))
+    return result.scalars().first()
 
-
-def create_google_user(db: Session, email: str, name: str, profile_image: str) -> User:
-    # 👈 고유한 랜덤 닉네임 생성 (예: user_a1b2c3d4)
-    random_suffix = uuid.uuid4().hex[:8]
-    random_nickname = f"user_{random_suffix}"
-
+async def create_google_user(db: AsyncSession, email: str, provider_id: str, provider: str = "google"):
+    """
+    신규 구글 유저 생성 (비동기 방식)
+    """
+    import uuid
+    random_nickname = f"User_{uuid.uuid4().hex[:6]}"
+    
     db_user = User(
-        email=email,
-        nickname=random_nickname,  # 자동 생성된 랜덤 닉네임 주입
-        profile_image=profile_image
+        email=email, 
+        nickname=random_nickname,
+        provider=provider,
+        provider_id=provider_id
     )
     db.add(db_user)
-    db.commit()
-    db.refresh(db_user)  # DB에서 생성된 자동 생성 id 및 timestamp 반영
+    await db.commit()         # 💡 주석 수정: 비동기 커밋
+    await db.refresh(db_user) # 💡 주석 수정: 비동기 갱신
     return db_user

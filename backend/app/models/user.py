@@ -1,26 +1,17 @@
-from sqlalchemy import Column, Integer, String, DateTime, func
-from app.db.base import Base  # 기존 base.py에서 상속받는 Base 클래스
+# backend/app/models/user.py
+from sqlalchemy import Column, BigInteger, String, Integer, DateTime
+from sqlalchemy.sql import func
+from app.db.base import Base  # 프로젝트 구조에 따른 Base 선언부 임포트
 
 class User(Base):
     __tablename__ = "users"
 
-    # id: INT, PK, AUTO_INCREMENT
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    
-    # email: VARCHAR, UNIQUE, NOT NULL
-    email = Column(String, unique=True, index=True, nullable=False)
-    
-    # name: VARCHAR, NOT NULL
-    # name = Column(String, nullable=False)
-
-    # 서비스 내에서 활동할 닉네임 (선택 사항, 초기값은 name과 동일하게 설정 가능)
-    nickname = Column(String, unique=True, index=True, nullable=False) # 👈 중복 방지 설정
-    
-    # profile_image: VARCHAR, NULL (Optional)
-    profile_image = Column(String, nullable=True)
-    
-    # created_at: TIMESTAMP, DEFAULT CURRENT_TIMESTAMP, NOT NULL
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    
-    # updated_at: TIMESTAMP, DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, NOT NULL
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    id = Column(BigInteger, primary_key=True, index=True, autoincrement=True)
+    provider = Column(String(50), nullable=False)                  # 💡 추가: 소셜 로그인 제공자 ('google')
+    provider_id = Column(String(255), nullable=False)              # 💡 추가: 소셜 로그인 유저 고유 ID
+    nickname = Column(String(100), nullable=False)
+    profile_image = Column(String(512), nullable=True)             # 💡 추가: 프로필 이미지 경로
+    chat_limit_override = Column(Integer, nullable=True)
+    email = Column(String(255), nullable=False, unique=True, index=True)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now()) # 💡 추가: 수정 일시

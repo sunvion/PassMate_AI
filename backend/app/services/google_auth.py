@@ -27,19 +27,23 @@ async def exchange_code_for_google_token(code: str) -> str:
             response_json = response.json()
             
             if response.status_code != 200:
+                # 💡 [디버깅 추가] 구글 서버가 보낸 날것(Raw)의 에러 응답을 터미널에 강제로 출력합니다.
+                print("\n" + "="*50)
+                print("[🚨 GOOGLE TOKEN EXCHANGE FAILED LOG]")
+                print(f"Status Code: {response.status_code}")
+                print(f"Response JSON: {response_json}")
+                print(f"Sent Redirect URI: {settings.GOOGLE_REDIRECT_URI}")
+                print("="*50 + "\n")
+                
+                # 프론트엔드나 클라이언트에게는 구글이 준 상세 에러 설명(error_description)을 전달합니다.
+                error_desc = response_json.get("error_description", "Unknown error")
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Google token exchange failed: {response_json.get('error_description', 'Unknown error')}"
+                    detail=f"Google token exchange failed: {error_desc}"
                 )
                 
-            # 구글 액세스 토큰 추출 및 반환
-            google_access_token = response_json.get("access_token")
-            if not google_access_token:
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Google access_token not found in response"
-                )
-            return google_access_token
+            # 성공 시 구글 액세스 토큰 추출 및 반환
+            return response_json.get("access_token")
             
         except httpx.RequestError as exc:
             raise HTTPException(
@@ -64,6 +68,13 @@ async def get_google_user_profile(google_access_token: str) -> dict:
             response_json = response.json()
             
             if response.status_code != 200:
+                # 💡 [디버깅 추가] 사용자 프로필 획득 실패 시에도 로그를 남깁니다.
+                print("\n" + "="*50)
+                print("[🚨 GOOGLE USERINFO FETCH FAILED LOG]")
+                print(f"Status Code: {response.status_code}")
+                print(f"Response JSON: {response_json}")
+                print("="*50 + "\n")
+                
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Failed to fetch user profile from Google"
@@ -73,6 +84,8 @@ async def get_google_user_profile(google_access_token: str) -> dict:
             return {
                 "id": response_json.get("id"),
                 "email": response_json.get("email"),
+                "name": response_json.get("name"),
+                "picture": response_json.get("picture")
             }
             
         except httpx.RequestError as exc:
