@@ -106,7 +106,7 @@ export default function HomePage() {
           <StepCard number="2" icon="✅" title="채점 및 결과 확인" />
           <StepCard number="3" icon="📘" title="오답 자동 저장" />
           <StepCard number="4" icon="🤖" title="AI 해설 질문" />
-          <StepCard number="5" icon="📈" title="취약 유형 복습" />
+          <StepCard number="5" icon="📈" title="약점 유형 복습" />
         </div>
       </section>
 
