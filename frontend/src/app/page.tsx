@@ -1,155 +1,65 @@
 import Image from "next/image";
-import Link from "next/link";
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-white text-slate-900">
-      {/* 상단 헤더 */}
-      <header className="fixed top-0 left-0 z-50 flex h-16 w-full items-center justify-between border-b border-slate-200 bg-white/90 px-8 backdrop-blur">
-        <div className="flex items-center gap-8">
-          <button className="text-2xl">☰</button>
-          <Link href="/">
-          <div className="flex items-center gap-3 font-bold text-xl">
+    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
+      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
+        <Image
+          className="dark:invert"
+          src="/next.svg"
+          alt="Next.js logo"
+          width={100}
+          height={20}
+          priority
+        />
+        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
+          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
+            To get started, edit the page.tsx file.
+          </h1>
+          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
+            Looking for a starting point or more instructions? Head over to{" "}
+            <a
+              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+              className="font-medium text-zinc-950 dark:text-zinc-50"
+            >
+              Templates
+            </a>{" "}
+            or the{" "}
+            <a
+              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+              className="font-medium text-zinc-950 dark:text-zinc-50"
+            >
+              Learning
+            </a>{" "}
+            center.
+          </p>
+        </div>
+        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
+          <a
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
+            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             <Image
-              src="/images/PM_icon.png"
-              alt="PassMate AI 로고"
-              width={45}
-              height={45}
-              className="rounded-lg"
-              priority
+              className="dark:invert"
+              src="/vercel.svg"
+              alt="Vercel logomark"
+              width={16}
+              height={16}
             />
-            <span>PassMate AI</span>
-          </div></Link>
+            Deploy Now
+          </a>
+          <a
+            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
+            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Documentation
+          </a>
         </div>
-
-        <button className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow hover:bg-blue-700">
-          로그인
-        </button>
-      </header>
-
-      {/* 1. 메인 소개 섹션 */}
-      <section className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-50 px-10 pt-16">
-        <div className="grid w-full max-w-6xl grid-cols-2 items-center gap-16">
-          <div className="ml-30">
-            <span className="mb-5 inline-block rounded-full bg-blue-100 px-4 py-2 text-sm font-bold text-blue-600">
-              AI와 함께
-            </span>
-
-            <h1 className="mb-6 text-5xl font-extrabold leading-tight">
-              합격을 설계하는
-              <br />
-              <span className="text-blue-600">나만의 학습 파트너</span>
-            </h1>
-
-            <p className="mb-8 text-lg leading-8 text-slate-600">
-              PassMate AI는 기출 분석과 AI 기술을 통해
-              <br />
-              공무원 시험 합격까지 가장 스마트한 길을 제시합니다.
-            </p>
-
-            <button className="rounded-lg bg-blue-600 px-10 py-4 font-bold text-white shadow-lg hover:bg-blue-700">
-              지금 시작하기
-            </button>
-          </div>
-
-          <div className="flex justify-center">
-            <Image
-              src="/images/homepage_main.png"
-              alt="PassMate AI 메인 이미지"
-              width={800}
-              height={600}
-              priority
-              className="w-full max-w-[720px] object-contain"
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* 2. 핵심 기능 섹션 */}
-      <section className="flex min-h-screen flex-col items-center justify-center px-10">
-        <span className="mb-4 rounded-full bg-blue-100 px-4 py-2 text-sm font-bold text-blue-600">
-          핵심 기능
-        </span>
-
-        <h2 className="mb-12 text-4xl font-extrabold">
-          AI가 분석하고, 합격까지 함께합니다
-        </h2>
-
-        <div className="grid w-full max-w-6xl grid-cols-3 gap-8">
-          <FeatureCard
-            icon="📘"
-            title="자동 오답노트"
-            desc="틀린 문제를 자동으로 저장하고 기출 연도별로 정리해줍니다."
-          />
-          <FeatureCard
-            icon="🤖"
-            title="AI 질문 & 해설"
-            desc="이해되지 않는 문제는 AI에게 질문하고 해설을 받아볼 수 있습니다."
-          />
-          <FeatureCard
-            icon="📊"
-            title="약점 유형 분석"
-            desc="자주 틀리는 단원과 유형을 분석해 학습 우선순위를 제안합니다."
-          />
-        </div>
-      </section>
-
-      {/* 3. 학습 흐름 섹션 */}
-      <section className="flex min-h-screen flex-col items-center justify-center bg-blue-50 px-10">
-        <span className="mb-4 rounded-full bg-blue-100 px-4 py-2 text-sm font-bold text-blue-600">
-          학습 흐름
-        </span>
-
-        <h2 className="mb-16 text-4xl font-extrabold">
-          PassMAte AI와 함께하는 학습 과정
-        </h2>
-
-        <div className="grid w-full max-w-6xl grid-cols-5 gap-6 text-center">
-          <StepCard number="1" icon="📝" title="기출문제 풀이" />
-          <StepCard number="2" icon="✅" title="채점 및 결과 확인" />
-          <StepCard number="3" icon="📘" title="오답 자동 저장" />
-          <StepCard number="4" icon="🤖" title="AI 해설 질문" />
-          <StepCard number="5" icon="📈" title="취약 유형 복습" />
-        </div>
-      </section>
-    </main>
-  );
-}
-
-function FeatureCard({
-  icon,
-  title,
-  desc,
-}: {
-  icon: string;
-  title: string;
-  desc: string;
-}) {
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-md transition hover:-translate-y-1 hover:shadow-xl">
-      <div className="mb-6 text-6xl">{icon}</div>
-      <h3 className="mb-3 text-xl font-bold">{title}</h3>
-      <p className="leading-7 text-slate-600">{desc}</p>
-    </div>
-  );
-}
-
-function StepCard({
-  number,
-  icon,
-  title,
-}: {
-  number: string;
-  icon: string;
-  title: string;
-}) {
-  return (
-    <div className="relative rounded-2xl bg-white p-6 shadow-md">
-      <div className="absolute -top-4 left-1/2 flex h-8 w-8 -translate-x-1/2 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white">
-        {number}
-      </div>
-      <div className="mb-5 mt-4 text-5xl">{icon}</div>
-      <h3 className="font-bold">{title}</h3>
+      </main>
     </div>
   );
 }
