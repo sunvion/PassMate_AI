@@ -36,8 +36,8 @@ const subjects = [
       "데이터베이스",
       "자료 구조",
       "프로그래밍 언어론",
-      "소프트웨어 공학 및 시스템 설계",
-      "데이터 통신과 네트워크",
+      "소프트웨어 공학 및\n 시스템 설계",
+      "데이터 통신과\n 네트워크",
       "인터넷 및 최신 기술 용어",
     ],
   },
@@ -138,15 +138,19 @@ export default function MyPage() {
         />
 
         <section className="mx-auto w-full max-w-[1500px] px-10 py-8">
-          <div className="mb-8 flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold">
-                기출문제 학습 통계
-              </h1>
-              <p className="mt-2 text-slate-500">
-                아직 학습 데이터가 없어요. 문제를 풀면 나만의 학습 통계가 생성됩니다.
-              </p>
-            </div>
+          <div className="mb-8">
+            <p className="mb-3 text-sm font-medium text-slate-500">
+              마이페이지 <span className="mx-2">›</span>
+              <span className="text-slate-900">학습 통계</span>
+            </p>
+
+            <h1 className="text-3xl font-bold">
+              기출문제 학습 통계
+            </h1>
+
+            <p className="mt-2 text-slate-500">
+              아직 학습 데이터가 없어요. 문제를 풀면 나만의 학습 통계가 생성됩니다.
+            </p>
           </div>
 
           <div className="relative mb-6">
