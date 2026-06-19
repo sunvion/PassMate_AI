@@ -17,6 +17,14 @@ async def google_oauth_callback(
     code: str = Query(...), 
     db: AsyncSession = Depends(get_db)
 ):
+    """
+    구글 로그인 콜백 엔드포인트
+    1. 구글 일회용 코드로 구글 액세스 토큰 교환
+    2. 구글 토큰으로 사용자 프로필 정보 획득
+    3. DB 조회 후 기존 회원이 아니면 신규 가입 처리 (비동기)
+    4. 우리 서비스 전용 JWT 토큰 발급
+    5. 프론트엔드 성공 페이지로 JWT와 닉네임을 담아 리디렉션
+    """
     # 1. 구글 일회용 코드를 구글 전용 액세스 토큰으로 교환
     google_access_token = await google_auth.exchange_code_for_google_token(code) 
     
@@ -25,7 +33,7 @@ async def google_oauth_callback(
     email = google_profile.get("email") 
     provider_id = str(google_profile.get("id")) # 💡 구글의 고유 식별 ID를 가져옵니다.
     
-    # 3. DB에서 유저 조회 및 가입 여부 판단
+    # 3. DB에서 유저 조회 및 가입 여부 판단 (비동기 await 적용)
     db_user = await user_crud.get_user_by_email(db, email=email) 
     if not db_user:
         # 💡 신규 소셜 가입자인 경우 provider_id를 함께 전달하여 생성합니다!
@@ -37,7 +45,7 @@ async def google_oauth_callback(
     # 5. 고유 닉네임 추출 및 안전하게 URL 인코딩 처리
     encoded_nickname = urllib.parse.quote(db_user.nickname)
     
-    # 프론트엔드(localhost:3001)의 로그인 성공 페이지로 토큰과 고유 닉네임을 리디렉션 전달
+    # 프론트엔드(localhost:3000)의 로그인 성공 페이지로 토큰과 고유 닉네임을 리디렉션 전달
     frontend_redirect_url = (
         f"http://localhost:3000/login-success?token={access_token}&nickname={encoded_nickname}"
     )

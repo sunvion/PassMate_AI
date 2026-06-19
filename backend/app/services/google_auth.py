@@ -42,8 +42,14 @@ async def exchange_code_for_google_token(code: str) -> str:
                     detail=f"Google token exchange failed: {error_desc}"
                 )
                 
-            # 성공 시 구글 액세스 토큰 추출 및 반환
-            return response_json.get("access_token")
+            # 상대방 방어 코드 반영: 구글 액세스 토큰 추출 및 검증
+            google_access_token = response_json.get("access_token")
+            if not google_access_token:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Google access_token not found in response"
+                )
+            return google_access_token
             
         except httpx.RequestError as exc:
             raise HTTPException(
@@ -80,7 +86,7 @@ async def get_google_user_profile(google_access_token: str) -> dict:
                     detail="Failed to fetch user profile from Google"
                 )
                 
-            # 명세에 명시된 형태 정보 구성 및 반환 (id, email, name, picture)
+            # 명세에 명시된 형태 정보 구성 및 반환 (id, email, name, picture 전체 유지)
             return {
                 "id": response_json.get("id"),
                 "email": response_json.get("email"),

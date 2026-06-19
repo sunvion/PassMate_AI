@@ -8,13 +8,12 @@ interface LoginModalProps {
 
 export default function LoginModal({ onClose }: LoginModalProps) {
   
-  // 🔥 [변경] 보안 에러를 유발하는 팝업 대신 직접 구글 로그인 주소로 이동시킵니다.
+  // 🔥 보안 에러를 유발하는 팝업 대신 직접 구글 로그인 주소로 이동시킵니다. (직접 연동 방식 유지)
   const handleGoogleLogin = () => {
     const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
     
     // 구글 콘솔 및 백엔드 .env와 완벽히 일치해야 하는 자격 증명 파라미터들
     const params = {
-      // ⚠️ 여기에 본인의 구글 클라이언트 ID 문자열을 직접 넣으시거나 환경변수를 사용하세요.
       client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "본인의_구글_클라이언트_ID_입력",
       redirect_uri: "http://localhost:8000/api/v1/auth/callback/google",
       response_type: "code",
@@ -60,7 +59,7 @@ export default function LoginModal({ onClose }: LoginModalProps) {
           </p>
         </div>
 
-        {/* 🔥 리디렉션 핸들러를 바인딩한 최종 안정화 버튼 */}
+        {/* 리디렉션 핸들러를 바인딩한 최종 안정화 버튼 */}
         <button 
           type="button"
           onClick={(e) => {

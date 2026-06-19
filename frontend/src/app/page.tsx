@@ -10,6 +10,7 @@ import LoginModal from "../components/LoginModal";
 export default function HomePage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const isLoggedIn = false; // 상대방이 추가한 로그인 상태 변수 반영
 
   return (
     <main className="min-h-screen bg-white text-slate-900">
@@ -21,10 +22,14 @@ export default function HomePage() {
       <Sidebar
         isOpen={isMenuOpen}
         onClose={() => setIsMenuOpen(false)}
+        isLoggedIn={isLoggedIn} // 상대방이 추가한 프롭스 반영
       />
 
-      {/* 1. 메인 소개 섹션 */}
-      <section className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-50 px-10 pt-16">
+      {/* 1. 메인 소개 섹션 (상대방이 추가한 id="start-section" 반영) */}
+      <section 
+        id="start-section"
+        className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-50 px-10 pt-16"
+      >
         <div className="grid w-full max-w-6xl grid-cols-1 items-center gap-16 lg:grid-cols-2">
           <div className="mx-auto max-w-xl lg:ml-28">
             <h1 className="mb-6 text-5xl font-extrabold leading-tight">
@@ -86,7 +91,7 @@ export default function HomePage() {
           <FeatureCard
             icon="📊"
             title="약점 유형 분석"
-            desc="자주 틀리는 단원과 유형을 분석해 학습 우선순위를 제안합니다."
+            desc="자주 틀리는 단원 and 유형을 분석해 학습 우선순위를 제안합니다."
           />
         </div>
       </section>
