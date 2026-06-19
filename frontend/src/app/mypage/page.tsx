@@ -58,6 +58,7 @@ export default function MyPage() {
   const [expectedScore, setExpectedScore] = useState(72);
 
   const current = subjects[selectedSubject];
+  const hasStudyData = false; // 원격 dev 브랜치에서 추가된 플래그 수용
 
   useEffect(() => {
     const makeRandomValues = () => {
@@ -149,7 +150,9 @@ export default function MyPage() {
             </h1>
 
             <p className="mt-2 text-slate-500">
-              아직 학습 데이터가 없어요. 문제를 풀면 나만의 학습 통계가 생성됩니다.
+              {hasStudyData
+                ? "나의 기출문제 풀이 기록을 바탕으로 학습 통계를 확인할 수 있어요."
+                : "아직 학습 데이터가 없어요. 문제를 풀면 나만의 학습 통계가 생성됩니다."}
             </p>
           </div>
 
@@ -190,9 +193,9 @@ export default function MyPage() {
                       }}
                       className={`w-full px-6 py-4 text-left font-semibold transition
               ${isSelected
-                          ? "bg-blue-50 text-blue-600"
-                          : "text-slate-700 hover:bg-slate-50"
-                        }
+                            ? "bg-blue-50 text-blue-600"
+                            : "text-slate-700 hover:bg-slate-50"
+                          }
             `}
                     >
                       {subject.name}
@@ -210,9 +213,11 @@ export default function MyPage() {
                   {current.areas.length}개 단원별 정답률
                 </h2>
 
-                <span className="rounded-full bg-blue-50 px-3 py-1 text-sm font-semibold text-blue-600">
-                  예시 화면
-                </span>
+                {!hasStudyData && (
+                  <span className="rounded-full bg-blue-50 px-3 py-1 text-sm font-semibold text-blue-600">
+                    예시 화면
+                  </span>
+                )}
               </div>
 
               <div className="flex justify-center">
@@ -303,8 +308,17 @@ export default function MyPage() {
 
               <div className="mt-4 rounded-2xl bg-blue-50 p-5 text-center">
                 <p className="font-bold text-blue-600">
-                  문제를 풀면 실제 데이터로 <br /> 학습 통계가 채워집니다.
+                  {hasStudyData ? (
+                    <>
+                      단원별 학습 상태를 <br /> 한눈에 확인할 수 있어요.
+                    </>
+                  ) : (
+                    <>
+                      문제를 풀면 실제 데이터로 <br /> 학습 통계가 채워집니다.
+                    </>
+                  )}
                 </p>
+
                 <p className="mt-1 text-sm text-slate-600">
                   단원별 정답률, 약점 단원, 복습 우선순위<br />를 확인할 수 있어요.
                 </p>
@@ -318,11 +332,21 @@ export default function MyPage() {
                 <Sparkles className="mx-auto mb-4 text-blue-600" size={42} />
 
                 <p className="text-lg font-semibold text-slate-700">
-                  아직 응시한 기출문제가 없어요
+                  {hasStudyData
+                    ? "최근 응시한 기출문제예요"
+                    : "아직 응시한 기출문제가 없어요"}
                 </p>
 
                 <p className="mt-2 text-slate-500">
-                  첫 문제를 풀면 최근 응시 기록과 <br /> 예상 점수가 표시됩니다.
+                  {hasStudyData ? (
+                    <>
+                      최근 풀이 기록과 예상 점수를 <br /> 확인할 수 있어요.
+                    </>
+                  ) : (
+                    <>
+                      첫 문제를 풀면 최근 응시 기록과 <br /> 예상 점수가 표시됩니다.
+                    </>
+                  )}
                 </p>
 
                 <div className="mt-6 text-6xl font-black text-blue-600">
@@ -330,7 +354,9 @@ export default function MyPage() {
                   <span className="text-2xl">점</span>
                 </div>
 
-                <p className="mt-2 text-sm text-slate-500">예시 예상 점수</p>
+                <p className="mt-2 text-sm text-slate-500">
+                  {hasStudyData ? "예상 점수" : "예시 예상 점수"}
+                </p>
               </div>
 
               <div className="mt-6 grid grid-cols-2 gap-4">
@@ -362,7 +388,9 @@ export default function MyPage() {
                 <BarChart3 className="text-blue-600" size={36} />
                 <div>
                   <p className="text-slate-500">총 풀이 문제 수</p>
-                  <p className="text-3xl font-bold">0 문제</p>
+                  <p className="text-3xl font-bold">
+                    {hasStudyData ? "128 문제" : "0 문제"}
+                  </p>
                 </div>
               </div>
 
@@ -370,7 +398,9 @@ export default function MyPage() {
                 <Target className="text-blue-600" size={36} />
                 <div>
                   <p className="text-slate-500">평균 정답률</p>
-                  <p className="text-3xl font-bold">- %</p>
+                  <p className="text-3xl font-bold">
+                    {hasStudyData ? `${averageRate}%` : "- %"}
+                  </p>
                 </div>
               </div>
 
@@ -378,7 +408,9 @@ export default function MyPage() {
                 <ClipboardList className="text-blue-600" size={36} />
                 <div>
                   <p className="text-slate-500">최근 응시 기록</p>
-                  <p className="text-3xl font-bold">없음</p>
+                  <p className="text-3xl font-bold">
+                    {hasStudyData ? "있음" : "없음"}
+                  </p>
                 </div>
               </div>
             </div>

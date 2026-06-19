@@ -7,21 +7,44 @@ interface LoginModalProps {
 }
 
 export default function LoginModal({ onClose }: LoginModalProps) {
+  
+  // 🔥 [보안/인앱 브라우저 대응] 팝업 차단 예외가 없는 표준 리디렉션 방식을 유지합니다.
+  const handleGoogleLogin = () => {
+    const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
+    
+    const params = {
+      client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "본인의_구글_클라이언트_ID_입력",
+      redirect_uri: "http://localhost:8000/api/v1/auth/callback/google",
+      response_type: "code",
+      scope: "openid email profile",
+      access_type: "offline",
+      prompt: "consent"
+    };
+
+    const queryString = new URLSearchParams(params).toString();
+    window.location.href = `${GOOGLE_AUTH_URL}?${queryString}`;
+  };
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
+      {/* 배경 블러 및 닫기 클릭 레이어 */}
       <div
         className="absolute inset-0 bg-black/45 backdrop-blur-sm"
         onClick={onClose}
       />
 
+      {/* 모달 본문 컨테이너 */}
       <div className="relative z-[101] w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl">
+        {/* 닫기 버튼 */}
         <button
+          type="button"
           onClick={onClose}
           className="absolute right-5 top-5 text-xl text-slate-400 hover:text-slate-700"
         >
           ×
         </button>
 
+        {/* 헤더 섹션 */}
         <div className="mb-6 text-center">
           <h2 className="text-3xl font-extrabold text-slate-900">
             로그인 / 회원가입
@@ -33,19 +56,31 @@ export default function LoginModal({ onClose }: LoginModalProps) {
           </p>
         </div>
 
-        <button className="relative flex w-full items-center rounded-xl border border-slate-300 bg-white px-6 py-4 font-bold text-slate-800 shadow-sm transition hover:bg-slate-50">
-          <Image
-            src="/images/google_logo.png"
-            alt="Google 로고"
-            width={36}
-            height={36}
-          />
+        {/* 직접 연동 핸들러를 바인딩한 최종 버튼 */}
+        <button 
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            handleGoogleLogin();
+          }}
+          className="relative flex w-full items-center rounded-xl border border-slate-300 bg-white px-6 py-4 font-bold text-slate-800 shadow-sm transition hover:bg-slate-50"
+        >
+          <div className="pointer-events-none flex items-center select-none">
+            <Image
+              src="/images/google_logo.png"
+              alt="Google 로고"
+              width={36}
+              height={36}
+              priority
+            />
+          </div>
 
-          <span className="absolute left-1/2 -translate-x-1/2">
+          <span className="absolute left-1/2 -translate-x-1/2 pointer-events-none select-none">
             Google로 계속하기
           </span>
         </button>
 
+        {/* 특징 안내 섹션 */}
         <div className="mt-6 space-y-3 text-sm font-medium text-slate-600">
           <p className="flex items-center gap-3">
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-blue-600">
@@ -53,7 +88,6 @@ export default function LoginModal({ onClose }: LoginModalProps) {
             </span>
             Google 계정으로 안전하게 로그인
           </p>
-
           <p className="flex items-center gap-3">
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-blue-600">
               ✓
@@ -62,9 +96,9 @@ export default function LoginModal({ onClose }: LoginModalProps) {
           </p>
         </div>
 
+        {/* 보안 안내 섹션 */}
         <div className="mt-8 rounded-2xl bg-blue-50 p-5">
           <p className="font-bold text-slate-800">안심하고 사용하세요</p>
-
           <p className="mt-2 text-sm leading-6 text-slate-600">
             개인정보는 안전하게 보호되며,
             <br />
@@ -72,6 +106,7 @@ export default function LoginModal({ onClose }: LoginModalProps) {
           </p>
         </div>
 
+        {/* 이용약관 동의 안내 */}
         <p className="mt-8 text-center text-xs leading-5 text-slate-400">
           계속하면 서비스 이용약관 및 개인정보 처리방침에
           <br />
