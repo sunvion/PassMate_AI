@@ -1,12 +1,24 @@
 "use client";
 
 import Image from "next/image";
+import { useGoogleLogin } from "@react-oauth/google";
 
 interface LoginModalProps {
   onClose: () => void;
 }
 
 export default function LoginModal({ onClose }: LoginModalProps) {
+  const googleLogin = useGoogleLogin({
+    flow: "auth-code",
+    onSuccess: (codeResponse) => {
+      window.location.href =
+        `http://localhost:8000/api/v1/auth/callback/google?code=${codeResponse.code}`;
+    },
+    onError: () => {
+      alert("구글 로그인에 실패했습니다.");
+    },
+  });
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
       <div
@@ -33,7 +45,9 @@ export default function LoginModal({ onClose }: LoginModalProps) {
           </p>
         </div>
 
-        <button className="relative flex w-full items-center rounded-xl border border-slate-300 bg-white px-6 py-4 font-bold text-slate-800 shadow-sm transition hover:bg-slate-50">
+        <button 
+        onClick={googleLogin}
+        className="relative flex w-full items-center rounded-xl border border-slate-300 bg-white px-6 py-4 font-bold text-slate-800 shadow-sm transition hover:bg-slate-50">
           <Image
             src="/images/google_logo.png"
             alt="Google 로고"
