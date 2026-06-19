@@ -25,7 +25,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const defaultMenuClass = "text-slate-900 hover:bg-blue-50 hover:text-blue-600 shadow-sm"
 
   const isHomeActive = pathname === "/";
-  const isMypageActive = pathname.startsWith("/mypage");
+  const isMypageActive = pathname.startsWith("/mypage") || pathname.startsWith("/setting");
   const isExamActive = pathname.startsWith("/exam");
 
   return (
@@ -108,9 +108,12 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               )}
 
               <Link
-                href="/settings/account"
+                href="/setting"
                 onClick={onClose}
-                className="hover:text-blue-600"
+                className={`${pathname.startsWith("/setting")
+                    ? "font-bold text-blue-600"
+                    : "hover:text-blue-600"
+                  }`}
               >
                 계정 관리
               </Link>
