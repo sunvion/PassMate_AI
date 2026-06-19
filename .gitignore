@@ -5,4 +5,5 @@ frontend/out/
 backend/__pycache__/
 backend/.pytest_cache/
 *.env
+*.env.local
 pass_cert_backup.sql
