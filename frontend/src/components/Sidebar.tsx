@@ -21,7 +21,6 @@ export default function Sidebar({ isOpen, onClose, isLoggedIn = false, }: Sideba
   const pathname = usePathname();
 
   const [isWrongNoteOpen, setIsWrongNoteOpen] = useState(false);
-  const [isExamOpen, setIsExamOpen] = useState(false);
 
   const activeMenuClass = "bg-blue-50 text-blue-600 shadow-sm";
   const defaultMenuClass = "text-slate-900 hover:bg-blue-50 hover:text-blue-600 shadow-sm"
@@ -73,7 +72,6 @@ export default function Sidebar({ isOpen, onClose, isLoggedIn = false, }: Sideba
                 <Home size={28} />
                 홈
               </span>
-              <ChevronRight size={24} />
             </Link>
           </div>
 
@@ -154,36 +152,27 @@ export default function Sidebar({ isOpen, onClose, isLoggedIn = false, }: Sideba
             </Link>
 
             <div className="ml-[68px] mt-3 flex flex-col gap-4 text-base font-medium text-slate-700">
-              <button
-                type="button"
-                onClick={() => setIsExamOpen(!isExamOpen)}
-                className="flex items-center justify-between text-left hover:text-blue-600"
+              <Link
+                href="/exams/full"
+                onClick={handleProtectedClick}
+                className={`${pathname === "/exams/full"
+                    ? "font-bold text-blue-600"
+                    : "hover:text-blue-600"
+                  }`}
               >
-                <span>회차별 풀기</span>
-                <ChevronRight
-                  size={18}
-                  className={`transition-transform ${isExamOpen ? "rotate-90" : ""
-                    }`}
-                />
-              </button>
+                전체 회차 풀기
+              </Link>
 
-              {isExamOpen && (
-                <div className="ml-4 flex flex-col gap-3 text-sm text-slate-600">
-                  <Link
-                    href="/exams/full"
-                    onClick={handleProtectedClick}
-                    className="hover:text-blue-600">
-                    전체 회차 풀기
-                  </Link>
-
-                  <Link
-                    href="/exams/single"
-                    onClick={handleProtectedClick}
-                    className="hover:text-blue-600">
-                    한 문제씩 풀기
-                  </Link>
-                </div>
-              )}
+              <Link
+                href="/exams/single"
+                onClick={handleProtectedClick}
+                className={`${pathname === "/exams/single"
+                    ? "font-bold text-blue-600"
+                    : "hover:text-blue-600"
+                  }`}
+              >
+                한 문제씩 풀기
+              </Link>
             </div>
           </div>
         </nav>
