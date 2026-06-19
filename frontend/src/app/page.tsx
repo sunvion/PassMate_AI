@@ -1,16 +1,16 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import Image from "next/image";
+import { useState } from 'react'
+import Image from 'next/image'
 
-import Header from "../components/Header";
-import Sidebar from "../components/Sidebar";
-import LoginModal from "../components/LoginModal";
+import Header from '../components/Header'
+import Sidebar from '../components/Sidebar'
+import LoginModal from '../components/LoginModal'
 
 export default function HomePage() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isLoginOpen, setIsLoginOpen] = useState(false);
-  const isLoggedIn = false; // 원격 dev 브랜치 로그인 상태 플래그 반영
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isLoginOpen, setIsLoginOpen] = useState(false)
+  const isLoggedIn = false
 
   return (
     <main className="min-h-screen bg-white text-slate-900">
@@ -22,11 +22,11 @@ export default function HomePage() {
       <Sidebar
         isOpen={isMenuOpen}
         onClose={() => setIsMenuOpen(false)}
-        isLoggedIn={isLoggedIn} // 원격 dev 브랜치 프롭스 구조 반영
+        isLoggedIn={isLoggedIn}
       />
 
-      {/* 1. 메인 소개 섹션 (원격 dev 브랜치 id="start-section" 반영) */}
-      <section 
+      {/* 1. 메인 소개 섹션 */}
+      <section
         id="start-section"
         className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-50 px-10 pt-16"
       >
@@ -91,7 +91,7 @@ export default function HomePage() {
           <FeatureCard
             icon="📊"
             title="약점 유형 분석"
-            desc="자주 틀리는 단원 and 유형을 분석해 학습 우선순위를 제안합니다."
+            desc="자주 틀리는 단원과 유형을 분석해 학습 우선순위를 제안합니다."
           />
         </div>
       </section>
@@ -115,11 +115,9 @@ export default function HomePage() {
         </div>
       </section>
 
-      {isLoginOpen && (
-        <LoginModal onClose={() => setIsLoginOpen(false)} />
-      )}
+      {isLoginOpen && <LoginModal onClose={() => setIsLoginOpen(false)} />}
     </main>
-  );
+  )
 }
 
 function FeatureCard({
@@ -127,9 +125,9 @@ function FeatureCard({
   title,
   desc,
 }: {
-  icon: string;
-  title: string;
-  desc: string;
+  icon: string
+  title: string
+  desc: string
 }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-md transition hover:-translate-y-1 hover:shadow-xl">
@@ -137,7 +135,7 @@ function FeatureCard({
       <h3 className="mb-3 text-xl font-bold">{title}</h3>
       <p className="leading-7 text-slate-600">{desc}</p>
     </div>
-  );
+  )
 }
 
 function StepCard({
@@ -145,9 +143,9 @@ function StepCard({
   icon,
   title,
 }: {
-  number: string;
-  icon: string;
-  title: string;
+  number: string
+  icon: string
+  title: string
 }) {
   return (
     <div className="rounded-xl border border-slate-100 bg-white p-6 shadow-sm">
@@ -157,5 +155,5 @@ function StepCard({
       <div className="mb-2 text-4xl">{icon}</div>
       <h3 className="font-semibold text-slate-800">{title}</h3>
     </div>
-  );
+  )
 }

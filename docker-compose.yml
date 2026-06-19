@@ -10,7 +10,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-password123}
       POSTGRES_DB: ${DB_NAME:-pass_cert_db}
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - pass_cert_postgres_data:/var/lib/postgresql/data
       - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -24,7 +24,7 @@ services:
     container_name: pass-cert-backend
     restart: always
     ports:
-      - "8000:8000"
+      - '8000:8000'
     volumes:
       - ./backend:/app
     environment:
@@ -41,12 +41,12 @@ services:
     container_name: pass-cert-frontend
     restart: always
     ports:
-      - "3000:3000"
+      - '3000:3000'
     # [중요] 호환성 유지 및 덮어쓰기 방지를 위한 익명 볼륨 맵핑 지정
     volumes:
       - ./frontend:/app
-      - /app/node_modules    # 윈도우 노드 모듈이 컨테이너 내부를 꼬이게 하지 않도록 격리
-      - /app/.next          # 빌드 캐시 격리
+      - /app/node_modules # 윈도우 노드 모듈이 컨테이너 내부를 꼬이게 하지 않도록 격리
+      - /app/.next # 빌드 캐시 격리
     environment:
       - NEXT_PUBLIC_API_URL=http://backend:8000
     depends_on:
