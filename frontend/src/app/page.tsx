@@ -1,67 +1,65 @@
+"use client";
+
+import { useState } from "react";
 import Image from "next/image";
 
-export default function Home() {
+import Header from "../components/Header";
+import Sidebar from "../components/Sidebar";
+import LoginModal from "../components/LoginModal";
+
+export default function HomePage() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <main className="min-h-screen bg-white text-slate-900">
+      <Header
+        onMenuClick={() => setIsMenuOpen(!isMenuOpen)}
+        onLoginClick={() => setIsLoginOpen(true)}
+      />
+
+      <Sidebar
+        isOpen={isMenuOpen}
+        onClose={() => setIsMenuOpen(false)}
+      />
+
+      {/* 1. 메인 소개 섹션 */}
+      <section className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-50 px-10 pt-16">
+        <div className="grid w-full max-w-6xl grid-cols-1 items-center gap-16 lg:grid-cols-2">
+          <div className="mx-auto max-w-xl lg:ml-28">
+            <h1 className="mb-6 text-5xl font-extrabold leading-tight">
+              <span className="text-blue-600">AI와 함께</span>
+              <br />
+              합격을 설계하는
+              <br />
+              <span className="text-blue-600">나만의 학습 파트너</span>
+            </h1>
+
+            <p className="mb-8 text-lg leading-8 text-slate-600">
+              PassMate AI는 기출 분석과 AI 기술을 통해
+              <br />
+              공무원 시험 합격까지 가장 스마트한 길을 제시합니다.
+            </p>
+
+            <button
+              onClick={() => setIsLoginOpen(true)}
+              className="rounded-lg bg-blue-600 px-10 py-4 font-bold text-white shadow-lg hover:bg-blue-700"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+              지금 시작하기
+            </button>
+          </div>
+
+          <div className="flex translate-y-12 justify-center">
             <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+              src="/images/homepage_main.png"
+              alt="PassMate AI 메인 이미지"
+              width={800}
+              height={600}
+              priority
+              className="w-full max-w-[720px] object-contain px-4"
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+          </div>
         </div>
-<<<<<<< HEAD
-      </main>
-=======
       </section>
 
       {/* 2. 핵심 기능 섹션 */}
@@ -133,7 +131,26 @@ function FeatureCard({
       <div className="mb-6 text-6xl">{icon}</div>
       <h3 className="mb-3 text-xl font-bold">{title}</h3>
       <p className="leading-7 text-slate-600">{desc}</p>
->>>>>>> eff510979fffe13537d7e2ab6295319339ebe1c2
+    </div>
+  );
+}
+
+function StepCard({
+  number,
+  icon,
+  title,
+}: {
+  number: string;
+  icon: string;
+  title: string;
+}) {
+  return (
+    <div className="rounded-xl border border-slate-100 bg-white p-6 shadow-sm">
+      <div className="mx-auto mb-3 flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 font-bold text-white text-sm">
+        {number}
+      </div>
+      <div className="mb-2 text-4xl">{icon}</div>
+      <h3 className="font-semibold text-slate-800">{title}</h3>
     </div>
   );
 }
