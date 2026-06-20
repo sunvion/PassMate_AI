@@ -1,41 +1,56 @@
+# backend/app/crud/question.py
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
-from app.models.question import Question
+from app.models.question import Question  # 프로젝트의 실제 테이블 ORM 모델 경로
 from typing import List, Optional
 
 class CRUDQuestion:
-    async def get_distinct_exams(self, db: AsyncSession) -> List[Question]:
+    async def get_by_id(self, db: AsyncSession, question_id: int) -> Optional[Question]:
         """
-        설명: 고유한 시험지 세트(exam_type, subject, year 조합)를 전체 대시보드용으로 반환
+        문제 고유 고유 ID(PK)를 기반으로 단일 문항 상세 정보를 조회합니다.
         """
-        query = select(Question.exam_type, Question.year, Question.subject).distinct()
+        query = select(Question).where(Question.id == question_id)
         result = await db.execute(query)
-        return result.all()
+        return result.scalar_one_or_none()
 
-    async def get_questions_by_exam(
-        self, db: AsyncSession, exam_type: str, year: int, subject: str
+    async def get_questions_by_criteria(
+        self, db: AsyncSession, exam_type: str, subject: str, year: Optional[int] = None
     ) -> List[Question]:
         """
-        설명: 선택한 시험지의 20문항 전체를 문항 순서대로 정렬하여 반환
+        기존 일반 기출 조회용: 시험 종류, 과목, 출제 연도를 기반으로 정렬된 문항 리스트를 반환합니다.
+        """
+        query = select(Question).where(
+            Question.exam_type == exam_type,
+            Question.subject == subject
+        )
+        
+        # 연도 파라미터가 명시적으로 들어온 경우에만 조건절 조건 추가
+        if year is not None:
+            query = query.where(Question.year == year)
+            
+        # 문항 번호(1번~20번) 순서대로 오름차순 정렬
+        query = query.order_by(Question.number.asc())
+        
+        result = await db.execute(query)
+        return list(result.scalars().all())
+
+    async def get_random_questions(
+        self, db: AsyncSession, exam_type: str, subject: str, limit: int = 40
+    ) -> List[Question]:
+        """
+        🆕 [추가]: 운전면허 등 문제은행 규격 대응 랜덤 문항 추출 로직
+        PostgreSQL의 ORDER BY RANDOM()을 사용하여 무작위로 뒤섞은 뒤 지정된 개수(기본 40개)만큼 끊어옵니다.
         """
         query = (
             select(Question)
             .where(
                 Question.exam_type == exam_type,
-                Question.year == year,
                 Question.subject == subject
             )
-            .order_by(Question.number.asc())
+            .order_by(func.random())  # 🌟 데이터베이스 레벨에서 무작위 셔플링 수행
+            .limit(limit)             # 🌟 지정된 개수(40개)만큼 슬라이싱
         )
         result = await db.execute(query)
-        return result.scalars().all()
-
-    async def get_by_id(self, db: AsyncSession, question_id: int) -> Optional[Question]:
-        """
-        설명: 고유 ID를 기반으로 단일 문항의 원본 정보를 상세 조회
-        """
-        query = select(Question).where(Question.id == question_id)
-        result = await db.execute(query)
-        return result.scalar_one_or_none()
+        return list(result.scalars().all())
 
 crud_question = CRUDQuestion()

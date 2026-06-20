@@ -2,6 +2,7 @@
 from sqlalchemy import Column, BigInteger, String, Integer, DateTime
 from sqlalchemy.sql import func
 from app.db.base import Base  # 기존 base.py에서 상속받는 Base 클래스
+from sqlalchemy.orm import relationship
 
 class User(Base):
     __tablename__ = "users"
@@ -28,3 +29,7 @@ class User(Base):
     # 생성 및 수정 일시 (상대방의 타임존 설정 및 NOT NULL 반영)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    # 💡 [핵심 추가] 신규 도메인 모델(History)과의 연결 관계를 선언합니다.
+    # 클래스 이름("History")은 backend/app/models/history.py에 정의된 클래스명과 일치해야 합니다.
+    solving_histories = relationship("ProblemSolvingHistory", back_populates="user", cascade="all, delete-orphan")
