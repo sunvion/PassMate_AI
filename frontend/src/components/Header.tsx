@@ -10,23 +10,59 @@ type HeaderProps = {
 };
 
 export default function Header({ onMenuClick, onLoginClick }: HeaderProps) {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [nickname, setNickname] = useState<string | null>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   useEffect(() => {
-    const savedNickname = localStorage.getItem("nickname");
+    const fetchUser = async () => {
+      const token = localStorage.getItem("token");
 
-    if (savedNickname) {
-      setNickname(savedNickname);
-    }
+      if (!token) {
+        setIsLoggedIn(false);
+        setNickname(null);
+        return;
+      }
+
+      try {
+        setIsLoggedIn(true);
+
+        const response = await fetch("http://localhost:8000/api/v1/users/me", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("유저 정보 조회 실패");
+        }
+
+        const data = await response.json();
+
+        setNickname(data.nickname);
+      } catch (error) {
+        console.error("헤더 유저 정보 조회 실패:", error);
+        setIsLoggedIn(false);
+        setNickname(null);
+      }
+    };
+
+    fetchUser();
   }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("nickname");
+    localStorage.removeItem("user");
+
+    setIsLoggedIn(false);
     setNickname(null);
+    setIsUserMenuOpen(false);
+
     window.location.href = "/";
   };
+
+  const displayName = nickname || "사용자";
 
   return (
     <header className="fixed left-0 top-0 z-50 flex h-16 w-full items-center justify-between border-b border-slate-200 bg-white/90 px-8 backdrop-blur">
@@ -50,7 +86,7 @@ export default function Header({ onMenuClick, onLoginClick }: HeaderProps) {
         </Link>
       </div>
 
-      {!nickname ? (
+      {!isLoggedIn ? (
         <button
           onClick={onLoginClick}
           className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow hover:bg-blue-700"
@@ -64,12 +100,12 @@ export default function Header({ onMenuClick, onLoginClick }: HeaderProps) {
             onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
             className="rounded-lg bg-blue-50 px-5 py-2 text-sm font-semibold text-blue-600 shadow-sm hover:bg-blue-100"
           >
-            안녕하세요, {nickname}님
+            안녕하세요, {displayName}님
           </button>
 
           {isUserMenuOpen && (
             <div className="absolute right-0 mt-3 w-60 rounded-2xl border border-slate-200 bg-white p-4 shadow-xl">
-              <p className="font-bold text-slate-900">{nickname}</p>
+              <p className="font-bold text-slate-900">{displayName}</p>
               <p className="mt-1 truncate text-sm text-slate-500">
                 Google 계정으로 로그인 중
               </p>

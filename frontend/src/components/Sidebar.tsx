@@ -31,14 +31,11 @@ export default function Sidebar({
 
   const isHomeActive = pathname === "/";
   const isMypageActive = pathname.startsWith("/mypage") || pathname.startsWith("/setting");
-  const isExamActive = pathname.startsWith("/exams"); // 최신 경로 명세 수용
-
-  const isDev = process.env.NODE_ENV === "development";
-  const canAccess = isLoggedIn || isDev;
+  const isExamActive = pathname.startsWith("/exam") || pathname.startsWith("/exams"); // 최신 경로 명세 수용
 
   // 비로그인 접근 시 메인 로그인 유도 섹션으로 스크롤시키는 방어용 함수 수용
   const handleProtectedClick = (e: MouseEvent<HTMLAnchorElement>) => {
-    if (canAccess) {
+    if (isLoggedIn) {
       onClose();
       return;
     }

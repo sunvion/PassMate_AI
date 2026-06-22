@@ -1,264 +1,273 @@
 "use client";
 
+//npm install axios
+import axios from "axios";
 import { useEffect, useState } from "react";
 import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
 import {
-  Camera,
-  UserRound,
-  Mail,
-  Monitor,
-  Code2,
-  Car,
-  Plus,
-  LogOut,
-  Trash2,
-  ChevronRight,
-  Minus,
+    UserRound,
+    Mail,
+    LogOut,
+    Trash2,
+    ChevronRight,
 } from "lucide-react";
 
+type LoginUser = {
+    email: string;
+    nickname: string;
+    profile_image?: string | null;
+};
+
 export default function SettingPage() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [nickname, setNickname] = useState("");
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [user, setUser] = useState<LoginUser | null>(null);
 
-  const [subjects, setSubjects] = useState([
-    {
-      id: 1,
-      icon: <Monitor size={22} />,
-      title: "국가직 9급 컴퓨터일반",
-    },
-    {
-      id: 2,
-      icon: <Code2 size={22} />,
-      title: "정보처리기사",
-    },
-    {
-      id: 3,
-      icon: <Car size={22} />,
-      title: "운전면허",
-    },
-  ]);
+    const [isEditingNickname, setIsEditingNickname] = useState(false);
+    const [nicknameInput, setNicknameInput] = useState("");
+    const [profilePreview, setProfilePreview] = useState<string | null>(null);
 
-  useEffect(() => {
-    const savedNickname = localStorage.getItem("nickname");
+    useEffect(() => {
+        const fetchUser = async () => {
+            try {
+                const token = localStorage.getItem("token");
 
-    if (savedNickname) {
-      setNickname(savedNickname);
-    }
-  }, []);
+                if (!token) {
+                    window.location.href = "/";
+                    return;
+                }
 
-  const removeSubject = (id: number) => {
-    setSubjects(subjects.filter((subject) => subject.id !== id));
-  };
+                const response = await axios.get(
+                    "http://localhost:8000/api/v1/users/me",
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("nickname");
-    window.location.href = "/";
-  };
+                setUser(response.data);
+                setNicknameInput(response.data.nickname || "");
+                setProfilePreview(response.data.profile_image || null);
+            } catch (error) {
+                console.error("유저 정보 조회 실패:", error);
 
-  return (
-    <main className="min-h-screen bg-slate-50 text-slate-900">
-      <Header
-        onMenuClick={() => setIsMenuOpen(true)}
-        onLoginClick={() => {}}
-      />
+                localStorage.removeItem("token");
+                localStorage.removeItem("nickname");
+                localStorage.removeItem("user");
 
-      <Sidebar isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
+                window.location.href = "/";
+            }
+        };
 
-      <section className="mx-auto w-full max-w-5xl px-6 pb-12 pt-28">
-        <div className="mb-8">
-          <p className="mb-3 text-sm font-medium text-slate-500">
-            마이페이지 <span className="mx-2">›</span>
-            <span className="text-slate-900">계정 관리</span>
-          </p>
+        fetchUser();
+    }, []);
 
-          <h1 className="text-3xl font-bold">계정 관리</h1>
-          <p className="mt-2 text-slate-500">
-            계정 정보를 확인하고 관리할 수 있습니다.
-          </p>
-        </div>
+    const handleNicknameSave = () => {
+        setUser((prev) =>
+            prev ? { ...prev, nickname: nicknameInput } : prev
+        );
 
-        <div className="space-y-6">
-          <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-            <h2 className="mb-6 text-xl font-bold">프로필</h2>
+        localStorage.setItem("nickname", nicknameInput);
+        setIsEditingNickname(false);
 
-            <div className="flex flex-col gap-8 md:flex-row md:items-center">
-              <div className="relative w-fit">
-                <div className="flex h-40 w-40 items-center justify-center rounded-full bg-gradient-to-br from-blue-200 to-blue-600 shadow-lg">
-                  <UserRound size={72} className="text-white" />
-                </div>
+        // TODO: 백엔드에 닉네임 수정 API가 생기면 여기서 PATCH 요청 연결
+    };
 
-                <button className="absolute bottom-2 right-2 flex h-14 w-14 items-center justify-center rounded-full border border-slate-200 bg-white shadow-md transition hover:scale-105 hover:bg-blue-50">
-                  <Camera size={24} className="text-blue-600" />
-                </button>
-              </div>
+    const handleProfileImageChange = (
+        event: React.ChangeEvent<HTMLInputElement>
+    ) => {
+        const file = event.target.files?.[0];
 
-              <div>
-                <h3 className="text-2xl font-bold">
-                  안녕하세요, {nickname || "사용자"}님! 👋
-                </h3>
-                <p className="mt-3 leading-7 text-slate-500">
-                  프로필 이미지를 변경하고 <br />
-                  나를 더 잘 표현해보세요.
-                </p>
+        if (!file) return;
 
-                <button className="mt-5 rounded-2xl border border-blue-200 px-6 py-3 font-semibold text-blue-600 transition hover:bg-blue-50">
-                  사진 변경하기
-                </button>
-              </div>
-            </div>
-          </section>
+        const imageUrl = URL.createObjectURL(file);
+        setProfilePreview(imageUrl);
 
-          <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-            <h2 className="mb-5 text-xl font-bold">닉네임</h2>
+        // TODO: 백엔드에 프로필 이미지 업로드 API가 생기면 여기서 FormData로 전송
+    };
 
-            <div className="flex flex-col gap-4 md:flex-row">
-              <input
-                value={nickname}
-                readOnly
-                className="h-14 flex-1 rounded-2xl border border-slate-200 px-5 text-lg outline-none"
-              />
+    const handleLogout = () => {
+        localStorage.removeItem("token");
+        localStorage.removeItem("nickname");
+        localStorage.removeItem("user");
 
-              <button className="h-14 rounded-2xl border border-blue-500 px-10 font-semibold text-blue-600 transition hover:bg-blue-50">
-                수정
-              </button>
-            </div>
-          </section>
-
-          <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-            <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-              <div>
-                <h2 className="mb-5 text-xl font-bold">이메일</h2>
-
-                <p className="text-lg font-medium">
-                  Google 계정 로그인
-                </p>
-
-                <div className="mt-3 flex items-center gap-2 text-slate-500">
-                  <Mail size={18} />
-                  <span>현재 이메일은 백엔드에서 전달받지 않고 있습니다.</span>
-                </div>
-              </div>
-
-              <button className="w-fit rounded-2xl bg-slate-100 px-6 py-3 font-semibold text-slate-400">
-                변경 불가
-              </button>
-            </div>
-          </section>
-
-          <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-            <h2 className="text-xl font-bold">학습 과목 관리</h2>
-            <p className="mt-2 text-slate-500">
-              학습 중인 과목을 관리하고 추가할 수 있습니다.
-            </p>
-
-            <div className="mt-6 space-y-3">
-              {subjects.map((subject) => (
-                <SubjectItem
-                  key={subject.id}
-                  icon={subject.icon}
-                  title={subject.title}
-                  onRemove={() => removeSubject(subject.id)}
-                />
-              ))}
-
-              <button className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-blue-300 font-semibold text-blue-600 transition hover:bg-blue-50">
-                <Plus size={20} />
-                과목 추가하기
-              </button>
-            </div>
-          </section>
-
-          <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-            <h2 className="mb-4 text-xl font-bold">계정 관리</h2>
-
-            <AccountAction
-              icon={<LogOut size={24} />}
-              title="로그아웃"
-              description="현재 계정에서 로그아웃합니다."
-              onClick={handleLogout}
+        window.location.href = "/";
+    };
+    return (
+        <main className="min-h-screen bg-slate-50 text-slate-900">
+            <Header
+                onMenuClick={() => setIsMenuOpen(true)}
+                onLoginClick={() => { }}
             />
 
-            <div className="my-4 border-t border-slate-100" />
+            <Sidebar isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
 
-            <AccountAction
-              danger
-              icon={<Trash2 size={24} />}
-              title="회원 탈퇴"
-              description="계정을 삭제하고 모든 데이터를 제거합니다."
-            />
-          </section>
-        </div>
-      </section>
-    </main>
-  );
-}
+            <section className="mx-auto w-full max-w-5xl px-6 pb-12 pt-28">
+                <div className="mb-8">
+                    <p className="mb-3 text-sm font-medium text-slate-500">
+                        마이페이지 <span className="mx-2">›</span>
+                        <span className="text-slate-900">계정 관리</span>
+                    </p>
 
-function SubjectItem({
-  icon,
-  title,
-  onRemove,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  onRemove: () => void;
-}) {
-  return (
-    <div className="flex h-14 items-center justify-between rounded-2xl border border-slate-200 px-5">
-      <div className="flex items-center gap-4">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-          {icon}
-        </div>
-        <span className="font-semibold">{title}</span>
-      </div>
+                    <h1 className="text-3xl font-bold">계정 관리</h1>
+                    <p className="mt-2 text-slate-500">
+                        계정 정보를 확인하고 관리할 수 있습니다.
+                    </p>
+                </div>
 
-      <button
-        onClick={onRemove}
-        className="flex h-8 w-8 items-center justify-center rounded-full text-red-500 transition hover:bg-red-50 hover:text-red-600"
-      >
-        <Minus size={22} strokeWidth={3} />
-      </button>
-    </div>
-  );
+                <div className="space-y-6">
+                    <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+                        <h2 className="mb-6 text-xl font-bold">프로필</h2>
+
+                        <div className="flex flex-col gap-8 md:flex-row md:items-center">
+                            <div className="relative w-fit">
+                                <div className="flex h-40 w-40 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-blue-200 to-blue-600 shadow-lg">
+                                    {profilePreview ? (
+                                        <img
+                                            src={profilePreview}
+                                            alt="프로필 이미지"
+                                            className="h-full w-full object-cover"
+                                        />
+                                    ) : (
+                                        <UserRound size={72} className="text-white" />
+                                    )}
+                                </div>
+                            </div>
+
+                            <div>
+                                <h3 className="text-2xl font-bold">
+                                    안녕하세요, {user?.nickname || "사용자"}님! 👋
+                                </h3>
+                                <p className="mt-3 leading-7 text-slate-500">
+                                    프로필 이미지를 변경하고 <br />
+                                    나를 더 잘 표현해보세요.
+                                </p>
+
+                                <label className="mt-5 inline-flex cursor-pointer rounded-2xl border border-blue-200 px-6 py-3 font-semibold text-blue-600 transition hover:bg-blue-50">
+                                    사진 변경하기
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={handleProfileImageChange}
+                                    />
+                                </label>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+                        <h2 className="mb-5 text-xl font-bold">닉네임</h2>
+
+                        <div className="flex flex-col gap-4 md:flex-row">
+                            <input
+                                value={nicknameInput}
+                                onChange={(e) => setNicknameInput(e.target.value)}
+                                readOnly={!isEditingNickname}
+                                className={`h-14 flex-1 rounded-2xl border px-5 text-lg outline-none ${isEditingNickname
+                                    ? "border-blue-300 bg-white"
+                                    : "border-slate-200 bg-slate-50"
+                                    }`}
+                            />
+
+                            {isEditingNickname ? (
+                                <button
+                                    onClick={handleNicknameSave}
+                                    className="h-14 rounded-2xl bg-blue-600 px-10 font-semibold text-white transition hover:bg-blue-700"
+                                >
+                                    저장
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => setIsEditingNickname(true)}
+                                    className="h-14 rounded-2xl border border-blue-500 px-10 font-semibold text-blue-600 transition hover:bg-blue-50"
+                                >
+                                    수정
+                                </button>
+                            )}
+                        </div>
+                    </section>
+
+                    <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+                        <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+                            <div>
+                                <h2 className="mb-5 text-xl font-bold">이메일</h2>
+
+                                <p className="text-lg font-medium">
+                                    Google 계정 로그인
+                                </p>
+
+                                <div className="mt-3 flex items-center gap-2 text-slate-500">
+                                    <Mail size={18} />
+                                    <span>
+                                        {user?.email || "이메일 정보를 불러오는 중입니다."}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+                        <h2 className="mb-4 text-xl font-bold">계정 관리</h2>
+
+                        <AccountAction
+                            icon={<LogOut size={24} />}
+                            title="로그아웃"
+                            description="현재 계정에서 로그아웃합니다."
+                            onClick={handleLogout}
+                        />
+
+                        <div className="my-4 border-t border-slate-100" />
+
+                        <AccountAction
+                            danger
+                            icon={<Trash2 size={24} />}
+                            title="회원 탈퇴"
+                            description="계정을 삭제하고 모든 데이터를 제거합니다."
+                        />
+                    </section>
+                </div>
+            </section>
+        </main>
+    );
 }
 
 function AccountAction({
-  icon,
-  title,
-  description,
-  danger = false,
-  onClick,
+    icon,
+    title,
+    description,
+    danger = false,
+    onClick,
 }: {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-  danger?: boolean;
-  onClick?: () => void;
+    icon: React.ReactNode;
+    title: string;
+    description: string;
+    danger?: boolean;
+    onClick?: () => void;
 }) {
-  return (
-    <button
-      onClick={onClick}
-      className="flex w-full items-center justify-between rounded-2xl p-3 text-left transition hover:bg-slate-50"
-    >
-      <div className="flex items-center gap-5">
-        <div className={danger ? "text-red-500" : "text-slate-600"}>
-          {icon}
-        </div>
+    return (
+        <button
+            onClick={onClick}
+            className="flex w-full items-center justify-between rounded-2xl p-3 text-left transition hover:bg-slate-50"
+        >
+            <div className="flex items-center gap-5">
+                <div className={danger ? "text-red-500" : "text-slate-600"}>
+                    {icon}
+                </div>
 
-        <div>
-          <p
-            className={`font-bold ${
-              danger ? "text-red-500" : "text-slate-900"
-            }`}
-          >
-            {title}
-          </p>
-          <p className="mt-1 text-sm text-slate-500">{description}</p>
-        </div>
-      </div>
+                <div>
+                    <p
+                        className={`font-bold ${danger ? "text-red-500" : "text-slate-900"
+                            }`}
+                    >
+                        {title}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-500">{description}</p>
+                </div>
+            </div>
 
-      <ChevronRight size={22} className="text-slate-400" />
-    </button>
-  );
+            <ChevronRight size={22} className="text-slate-400" />
+        </button>
+    );
 }
