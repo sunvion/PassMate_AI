@@ -16,7 +16,7 @@ import {
 type LoginUser = {
     email: string;
     nickname: string;
-    profile_image?: string | null;
+    picture?: string | null;
 };
 
 export default function SettingPage() {
@@ -26,6 +26,9 @@ export default function SettingPage() {
     const [isEditingNickname, setIsEditingNickname] = useState(false);
     const [nicknameInput, setNicknameInput] = useState("");
     const [profilePreview, setProfilePreview] = useState<string | null>(null);
+
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
     useEffect(() => {
         const fetchUser = async () => {
@@ -48,7 +51,7 @@ export default function SettingPage() {
 
                 setUser(response.data);
                 setNicknameInput(response.data.nickname || "");
-                setProfilePreview(response.data.profile_image || null);
+                setProfilePreview(response.data.picture || null);
             } catch (error) {
                 console.error("유저 정보 조회 실패:", error);
 
@@ -63,15 +66,35 @@ export default function SettingPage() {
         fetchUser();
     }, []);
 
-    const handleNicknameSave = () => {
-        setUser((prev) =>
-            prev ? { ...prev, nickname: nicknameInput } : prev
-        );
+    const handleNicknameSave = async () => {
+        try {
+            const token = localStorage.getItem("token");
 
-        localStorage.setItem("nickname", nicknameInput);
-        setIsEditingNickname(false);
+            const response = await axios.put(
+                "http://localhost:8000/api/v1/users/me",
+                {
+                    nickname: nicknameInput,
+                    picture: profilePreview || null,
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
 
-        // TODO: 백엔드에 닉네임 수정 API가 생기면 여기서 PATCH 요청 연결
+            setUser(response.data);
+            setNicknameInput(response.data.nickname || "");
+            setProfilePreview(response.data.picture || null);
+
+            localStorage.setItem("nickname", response.data.nickname);
+            localStorage.setItem("user", JSON.stringify(response.data));
+
+            setIsEditingNickname(false);
+            setSuccessMessage("프로필 정보가 수정되었습니다.");
+        } catch (error: any) {
+            setSuccessMessage(error.response?.data?.detail ?? "프로필 수정에 실패했습니다.");
+        }
     };
 
     const handleProfileImageChange = (
@@ -83,8 +106,6 @@ export default function SettingPage() {
 
         const imageUrl = URL.createObjectURL(file);
         setProfilePreview(imageUrl);
-
-        // TODO: 백엔드에 프로필 이미지 업로드 API가 생기면 여기서 FormData로 전송
     };
 
     const handleLogout = () => {
@@ -94,6 +115,28 @@ export default function SettingPage() {
 
         window.location.href = "/";
     };
+
+    const handleDeleteAccount = async () => {
+        try {
+            const token = localStorage.getItem("token");
+
+            await axios.delete("http://localhost:8000/api/v1/users/me", {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            localStorage.removeItem("token");
+            localStorage.removeItem("nickname");
+            localStorage.removeItem("user");
+
+            window.location.href = "/";
+        } catch (error: any) {
+            setIsDeleteModalOpen(false);
+            setSuccessMessage(error.response?.data?.detail ?? "회원 탈퇴에 실패했습니다.");
+        }
+    };
+
     return (
         <main className="min-h-screen bg-slate-50 text-slate-900">
             <Header
@@ -225,10 +268,67 @@ export default function SettingPage() {
                             icon={<Trash2 size={24} />}
                             title="회원 탈퇴"
                             description="계정을 삭제하고 모든 데이터를 제거합니다."
+                            onClick={() => setIsDeleteModalOpen(true)}
                         />
                     </section>
                 </div>
             </section>
+
+            {successMessage && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
+                    <div className="w-full max-w-sm rounded-3xl bg-white p-7 text-center shadow-xl">
+                        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 text-2xl text-blue-600">
+                            ✓
+                        </div>
+
+                        <h3 className="text-xl font-bold text-slate-900">알림</h3>
+                        <p className="mt-3 text-slate-500">{successMessage}</p>
+
+                        <button
+                            onClick={() => setSuccessMessage(null)}
+                            className="mt-6 h-12 w-full rounded-2xl bg-blue-600 font-semibold text-white transition hover:bg-blue-700"
+                        >
+                            확인
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {isDeleteModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
+                    <div className="w-full max-w-md rounded-3xl bg-white p-7 shadow-xl">
+                        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-50 text-2xl">
+                            🗑️
+                        </div>
+
+                        <h3 className="text-center text-xl font-bold text-slate-900">
+                            회원 탈퇴
+                        </h3>
+
+                        <p className="mt-3 text-center leading-6 text-slate-500">
+                            정말로 회원 탈퇴하시겠습니까?
+                            <br />
+                            계정과 학습 데이터는 삭제되며 되돌릴 수 없습니다.
+                        </p>
+
+                        <div className="mt-7 flex gap-3">
+                            <button
+                                onClick={() => setIsDeleteModalOpen(false)}
+                                className="h-12 flex-1 rounded-2xl border border-slate-200 font-semibold text-slate-600 transition hover:bg-slate-50"
+                            >
+                                취소
+                            </button>
+
+                            <button
+                                onClick={handleDeleteAccount}
+                                className="h-12 flex-1 rounded-2xl bg-red-500 font-semibold text-white transition hover:bg-red-600"
+                            >
+                                탈퇴하기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </main>
     );
 }
