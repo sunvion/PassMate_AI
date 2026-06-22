@@ -16,16 +16,13 @@ import {
 type LoginUser = {
     email: string;
     nickname: string;
-    picture?: string | null;
 };
 
 export default function SettingPage() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [user, setUser] = useState<LoginUser | null>(null);
 
-    const [isEditingNickname, setIsEditingNickname] = useState(false);
     const [nicknameInput, setNicknameInput] = useState("");
-    const [profilePreview, setProfilePreview] = useState<string | null>(null);
 
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -51,7 +48,6 @@ export default function SettingPage() {
 
                 setUser(response.data);
                 setNicknameInput(response.data.nickname || "");
-                setProfilePreview(response.data.picture || null);
             } catch (error) {
                 console.error("유저 정보 조회 실패:", error);
 
@@ -73,8 +69,7 @@ export default function SettingPage() {
             const response = await axios.put(
                 "http://localhost:8000/api/v1/users/me",
                 {
-                    nickname: nicknameInput,
-                    picture: profilePreview || null,
+                    nickname: nicknameInput
                 },
                 {
                     headers: {
@@ -85,27 +80,16 @@ export default function SettingPage() {
 
             setUser(response.data);
             setNicknameInput(response.data.nickname || "");
-            setProfilePreview(response.data.picture || null);
 
             localStorage.setItem("nickname", response.data.nickname);
             localStorage.setItem("user", JSON.stringify(response.data));
 
-            setIsEditingNickname(false);
-            setSuccessMessage("프로필 정보가 수정되었습니다.");
+            window.dispatchEvent(new Event("user-updated"));
+
+            setSuccessMessage("닉네임이 수정되었습니다.");
         } catch (error: any) {
             setSuccessMessage(error.response?.data?.detail ?? "프로필 수정에 실패했습니다.");
         }
-    };
-
-    const handleProfileImageChange = (
-        event: React.ChangeEvent<HTMLInputElement>
-    ) => {
-        const file = event.target.files?.[0];
-
-        if (!file) return;
-
-        const imageUrl = URL.createObjectURL(file);
-        setProfilePreview(imageUrl);
     };
 
     const handleLogout = () => {
@@ -166,15 +150,7 @@ export default function SettingPage() {
                         <div className="flex flex-col gap-8 md:flex-row md:items-center">
                             <div className="relative w-fit">
                                 <div className="flex h-40 w-40 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-blue-200 to-blue-600 shadow-lg">
-                                    {profilePreview ? (
-                                        <img
-                                            src={profilePreview}
-                                            alt="프로필 이미지"
-                                            className="h-full w-full object-cover"
-                                        />
-                                    ) : (
-                                        <UserRound size={72} className="text-white" />
-                                    )}
+                                    <UserRound size={72} className="text-white" />
                                 </div>
                             </div>
 
@@ -183,19 +159,9 @@ export default function SettingPage() {
                                     안녕하세요, {user?.nickname || "사용자"}님! 👋
                                 </h3>
                                 <p className="mt-3 leading-7 text-slate-500">
-                                    프로필 이미지를 변경하고 <br />
-                                    나를 더 잘 표현해보세요.
+                                    닉네임과 계정 정보를 확인하고 <br />
+                                    필요한 정보를 수정할 수 있습니다.
                                 </p>
-
-                                <label className="mt-5 inline-flex cursor-pointer rounded-2xl border border-blue-200 px-6 py-3 font-semibold text-blue-600 transition hover:bg-blue-50">
-                                    사진 변경하기
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        className="hidden"
-                                        onChange={handleProfileImageChange}
-                                    />
-                                </label>
                             </div>
                         </div>
                     </section>
@@ -207,28 +173,20 @@ export default function SettingPage() {
                             <input
                                 value={nicknameInput}
                                 onChange={(e) => setNicknameInput(e.target.value)}
-                                readOnly={!isEditingNickname}
-                                className={`h-14 flex-1 rounded-2xl border px-5 text-lg outline-none ${isEditingNickname
-                                    ? "border-blue-300 bg-white"
-                                    : "border-slate-200 bg-slate-50"
-                                    }`}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                        handleNicknameSave();
+                                    }
+                                }}
+                                className="h-14 flex-1 rounded-2xl border border-slate-200 bg-white px-5 text-lg outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-50"
                             />
 
-                            {isEditingNickname ? (
-                                <button
-                                    onClick={handleNicknameSave}
-                                    className="h-14 rounded-2xl bg-blue-600 px-10 font-semibold text-white transition hover:bg-blue-700"
-                                >
-                                    저장
-                                </button>
-                            ) : (
-                                <button
-                                    onClick={() => setIsEditingNickname(true)}
-                                    className="h-14 rounded-2xl border border-blue-500 px-10 font-semibold text-blue-600 transition hover:bg-blue-50"
-                                >
-                                    수정
-                                </button>
-                            )}
+                            <button
+                                onClick={handleNicknameSave}
+                                className="h-14 rounded-2xl bg-blue-600 px-10 font-semibold text-white transition hover:bg-blue-700"
+                            >
+                                저장
+                            </button>
                         </div>
                     </section>
 

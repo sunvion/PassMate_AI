@@ -40,6 +40,8 @@ export default function Header({ onMenuClick, onLoginClick }: HeaderProps) {
         const data = await response.json();
 
         setNickname(data.nickname);
+        localStorage.setItem("nickname", data.nickname);
+        localStorage.setItem("user", JSON.stringify(data));
       } catch (error) {
         console.error("헤더 유저 정보 조회 실패:", error);
         setIsLoggedIn(false);
@@ -48,6 +50,12 @@ export default function Header({ onMenuClick, onLoginClick }: HeaderProps) {
     };
 
     fetchUser();
+
+    window.addEventListener("user-updated", fetchUser);
+
+    return () => {
+      window.removeEventListener("user-updated", fetchUser);
+    };
   }, []);
 
   const handleLogout = () => {
