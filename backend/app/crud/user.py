@@ -37,3 +37,27 @@ async def create_google_user(
     await db.commit()         # 비동기 커밋
     await db.refresh(db_user) # DB에서 생성된 자동 생성 id 및 timestamp 반영 (비동기 갱신)
     return db_user
+
+async def update_user_profile(
+    db: AsyncSession, db_user: User, update_data: dict
+) -> User:
+    """
+    기능: 유저의 닉네임 또는 프로필 이미지를 선택적으로 수정합니다.
+    """
+    if "nickname" in update_data and update_data["nickname"] is not None:
+        db_user.nickname = update_data["nickname"]
+    if "profile_image" in update_data and update_data["profile_image"] is not None:
+        db_user.profile_image = update_data["profile_image"]
+
+    await db.commit()
+    await db.refresh(db_user)
+    return db_user
+
+
+async def delete_user_account(db: AsyncSession, db_user: User) -> None:
+    """
+    기능: 유저 계정을 영구 삭제합니다. 
+    (init.sql의 외래키 ON DELETE CASCADE 설정 덕분에 유저가 삭제되면 풀이 이력도 자동 삭제됩니다)
+    """
+    await db.delete(db_user)
+    await db.commit()  # 💡 비동기 반영 필수
