@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 
 import Header from '../components/Header'
@@ -10,7 +10,12 @@ import LoginModal from '../components/LoginModal'
 export default function HomePage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isLoginOpen, setIsLoginOpen] = useState(false)
-  const isLoggedIn = false
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+
+  useEffect(() => {
+    const token = localStorage.getItem('token')
+    setIsLoggedIn(!!token)
+  }, [])
 
   return (
     <main className="min-h-screen bg-white text-slate-900">
@@ -22,7 +27,6 @@ export default function HomePage() {
       <Sidebar
         isOpen={isMenuOpen}
         onClose={() => setIsMenuOpen(false)}
-        isLoggedIn={isLoggedIn}
       />
 
       {/* 1. 메인 소개 섹션 */}
@@ -46,12 +50,14 @@ export default function HomePage() {
               공무원 시험 합격까지 가장 스마트한 길을 제시합니다.
             </p>
 
-            <button
-              onClick={() => setIsLoginOpen(true)}
-              className="rounded-lg bg-blue-600 px-10 py-4 font-bold text-white shadow-lg hover:bg-blue-700"
-            >
-              지금 시작하기
-            </button>
+            {!isLoggedIn && (
+              <button
+                onClick={() => setIsLoginOpen(true)}
+                className="rounded-lg bg-blue-600 px-10 py-4 font-bold text-white shadow-lg hover:bg-blue-700"
+              >
+                지금 시작하기
+              </button>
+            )}
           </div>
 
           <div className="flex translate-y-12 justify-center">

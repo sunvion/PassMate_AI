@@ -1,72 +1,94 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
 
-const exams = [
-  {
-    id: 1,
-    year: "2024",
-    agency: "국가직 9급",
-    subject: "컴퓨터일반",
-    questionCount: 20,
-  },
-  {
-    id: 2,
-    year: "2023",
-    agency: "지방직 9급",
-    subject: "컴퓨터일반",
-    questionCount: 20,
-  },
-  {
-    id: 3,
-    year: "2023",
-    agency: "국가직 9급",
-    subject: "컴퓨터일반",
-    questionCount: 20,
-  },
-  {
-    id: 4,
-    year: "2022",
-    agency: "지방직 9급",
-    subject: "컴퓨터일반",
-    questionCount: 20,
-  },
-  {
-    id: 5,
-    year: "2024",
-    agency: "한국도로교통공단",
-    subject: "운전면허 필기",
-    questionCount: 40,
-  },
-  {
-    id: 6,
-    year: "2023",
-    agency: "한국도로교통공단",
-    subject: "운전면허 필기",
-    questionCount: 40,
-  }
-];
+type ExamMeta = {
+  exam_type: string;
+  year: number;
+  subject: string;
+};
+
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
 export default function FullExamPage() {
+  const router = useRouter();
+
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [selectedYear, setSelectedYear] = useState("전체");
-  const [selectedAgency, setSelectedAgency] = useState("전체");
   const [selectedSubject, setSelectedSubject] = useState("전체");
+
+  const [exams, setExams] = useState<ExamMeta[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    const fetchExams = async () => {
+      try {
+        setIsLoading(true);
+        setErrorMessage("");
+
+        const res = await fetch(`${API_BASE_URL}/api/v1/exams`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          cache: "no-store",
+        });
+
+        if (!res.ok) {
+          throw new Error("시험 목록 조회 실패");
+        }
+
+        const data: ExamMeta[] = await res.json();
+        setExams(data);
+      } catch (error) {
+        console.error(error);
+        setErrorMessage("시험 목록을 불러오지 못했습니다.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchExams();
+  }, []);
+
+  const yearOptions = [
+    "전체",
+    ...Array.from(new Set(exams.map((exam) => String(exam.year)))).sort(
+      (a, b) => Number(b) - Number(a)
+    ),
+  ];
+
+  const subjectOptions = [
+    "전체",
+    ...Array.from(new Set(exams.map((exam) => exam.subject))),
+  ];
 
   const filteredExams = exams.filter((exam) => {
     const yearMatched =
-      selectedYear === "전체" || exam.year === selectedYear;
-
-    const agencyMatched =
-      selectedAgency === "전체" || exam.agency === selectedAgency;
+      selectedYear === "전체" || String(exam.year) === selectedYear;
 
     const subjectMatched =
       selectedSubject === "전체" || exam.subject === selectedSubject;
 
-    return yearMatched && agencyMatched && subjectMatched;
+    return yearMatched && subjectMatched;
   });
+
+  const handleStartExam = (exam: ExamMeta) => {
+    const examKey = `${exam.year}-${exam.exam_type}-${exam.subject}`;
+
+    router.push(
+      `/exam/solve/${encodeURIComponent(
+        examKey
+      )}?exam_type=${encodeURIComponent(
+        exam.exam_type
+      )}&subject=${encodeURIComponent(exam.subject)}&year=${exam.year}`
+    );
+  };
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
@@ -75,10 +97,7 @@ export default function FullExamPage() {
         onLoginClick={() => {}}
       />
 
-      <Sidebar
-        isOpen={isMenuOpen}
-        onClose={() => setIsMenuOpen(false)}
-      />
+      <Sidebar isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
 
       <section className="mx-auto w-full max-w-6xl px-6 pb-12 pt-28">
         <div className="mb-8">
@@ -97,7 +116,7 @@ export default function FullExamPage() {
           <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <h2 className="text-xl font-bold">검색 조건</h2>
 
-            <div className="mt-6 grid gap-4 md:grid-cols-4">
+            <div className="mt-6 grid gap-4 md:grid-cols-3">
               <div>
                 <label className="mb-2 block text-sm font-semibold text-slate-700">
                   연도
@@ -107,26 +126,9 @@ export default function FullExamPage() {
                   onChange={(e) => setSelectedYear(e.target.value)}
                   className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-slate-900 outline-none focus:border-blue-500"
                 >
-                  <option>전체</option>
-                  <option>2024</option>
-                  <option>2023</option>
-                  <option>2022</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-700">
-                  시행처
-                </label>
-                <select
-                  value={selectedAgency}
-                  onChange={(e) => setSelectedAgency(e.target.value)}
-                  className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-slate-900 outline-none focus:border-blue-500"
-                >
-                  <option>전체</option>
-                  <option>국가직 9급</option>
-                  <option>지방직 9급</option>
-                  <option>한국도로교통공단</option>
+                  {yearOptions.map((year) => (
+                    <option key={year}>{year}</option>
+                  ))}
                 </select>
               </div>
 
@@ -139,14 +141,17 @@ export default function FullExamPage() {
                   onChange={(e) => setSelectedSubject(e.target.value)}
                   className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-slate-900 outline-none focus:border-blue-500"
                 >
-                  <option>전체</option>
-                  <option>컴퓨터일반</option>
-                  <option>운전면허 필기</option>
+                  {subjectOptions.map((subject) => (
+                    <option key={subject}>{subject}</option>
+                  ))}
                 </select>
               </div>
 
               <div className="flex items-end">
-                <button className="h-12 w-full rounded-xl bg-blue-600 font-bold text-white shadow-md transition hover:bg-blue-700">
+                <button
+                  type="button"
+                  className="h-12 w-full rounded-xl bg-blue-600 font-bold text-white shadow-md transition hover:bg-blue-700"
+                >
                   검색
                 </button>
               </div>
@@ -162,27 +167,43 @@ export default function FullExamPage() {
             </div>
 
             <div className="mt-6 grid gap-4">
-              {filteredExams.length > 0 ? (
+              {isLoading ? (
+                <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-10 text-center">
+                  <p className="font-bold text-slate-700">
+                    시험 목록을 불러오는 중입니다...
+                  </p>
+                </div>
+              ) : errorMessage ? (
+                <div className="rounded-2xl border border-dashed border-red-300 bg-red-50 p-10 text-center">
+                  <p className="font-bold text-red-600">{errorMessage}</p>
+                </div>
+              ) : filteredExams.length > 0 ? (
                 filteredExams.map((exam) => (
                   <div
-                    key={exam.id}
+                    key={`${exam.year}-${exam.exam_type}-${exam.subject}`}
                     className="flex flex-col gap-5 rounded-2xl border border-slate-200 bg-white p-5 transition hover:border-blue-200 hover:bg-blue-50/40 hover:shadow-sm md:flex-row md:items-center md:justify-between"
                   >
                     <div>
-                      <h3 className="text-lg font-extrabold">
-                        {exam.year} {exam.agency}
-                      </h3>
+                      <div className="flex items-center gap-3">
+                        <h3 className="text-lg font-extrabold">
+                          {exam.year}년
+                        </h3>
 
-                      <p className="mt-2 font-semibold text-slate-700">
-                        {exam.subject}
-                      </p>
+                        <span className="rounded-full bg-blue-50 px-3 py-1 text-sm font-bold text-blue-600">
+                          {exam.subject}
+                        </span>
+                      </div>
 
-                      <p className="mt-1 text-sm text-slate-500">
-                        총 {exam.questionCount}문항
+                      <p className="mt-2 text-sm text-slate-500">
+                        전체 회차 풀이
                       </p>
                     </div>
 
-                    <button className="h-12 rounded-xl bg-blue-600 px-7 font-bold text-white shadow-md transition hover:bg-blue-700 md:w-auto">
+                    <button
+                      type="button"
+                      onClick={() => handleStartExam(exam)}
+                      className="h-12 rounded-xl bg-blue-600 px-7 font-bold text-white shadow-md transition hover:bg-blue-700 md:w-auto"
+                    >
                       응시하기
                     </button>
                   </div>

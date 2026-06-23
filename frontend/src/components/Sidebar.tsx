@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { MouseEvent } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
@@ -14,40 +14,53 @@ import {
 type SidebarProps = {
   isOpen: boolean;
   onClose: () => void;
-  isLoggedIn?: boolean;
 };
 
 export default function Sidebar({
   isOpen,
   onClose,
-  isLoggedIn = false,
 }: SidebarProps) {
   const pathname = usePathname();
 
   const [isWrongNoteOpen, setIsWrongNoteOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const checkLogin = () => {
+      const token = localStorage.getItem("token");
+      setIsLoggedIn(!!token);
+    };
+
+    checkLogin();
+
+    window.addEventListener("focus", checkLogin);
+    window.addEventListener("storage", checkLogin);
+
+    return () => {
+      window.removeEventListener("focus", checkLogin);
+      window.removeEventListener("storage", checkLogin);
+    };
+  }, []);
 
   const activeMenuClass = "bg-blue-50 text-blue-600 shadow-sm";
   const defaultMenuClass = "text-slate-900 hover:bg-blue-50 hover:text-blue-600 shadow-sm";
 
   const isHomeActive = pathname === "/";
   const isMypageActive = pathname.startsWith("/mypage") || pathname.startsWith("/setting");
-  const isExamActive = pathname.startsWith("/exams"); // 최신 경로 명세 수용
-
-  const isDev = process.env.NODE_ENV === "development";
-  const canAccess = isLoggedIn || isDev;
+  const isExamActive = pathname.startsWith("/exam") || pathname.startsWith("/exams"); // 최신 경로 명세 수용
 
   // 비로그인 접근 시 메인 로그인 유도 섹션으로 스크롤시키는 방어용 함수 수용
   const handleProtectedClick = (e: MouseEvent<HTMLAnchorElement>) => {
-    if (canAccess) {
+    const token = localStorage.getItem("token");
+
+    if (token) {
       onClose();
       return;
     }
 
     e.preventDefault();
 
-    document.getElementById("start-section")?.scrollIntoView({
-      behavior: "smooth",
-    });
+    window.location.href = "/#start-section";
 
     onClose();
   };
@@ -62,18 +75,16 @@ export default function Sidebar({
       )}
 
       <aside
-        className={`fixed left-4 top-20 z-40 h-[calc(100vh-6rem)] w-[90vw] max-w-[320px] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl transition-transform duration-300 ${
-          isOpen ? "translate-x-0" : "-translate-x-[120%]"
-        }`}
+        className={`fixed left-4 top-20 z-40 h-[calc(100vh-6rem)] w-[90vw] max-w-[320px] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl transition-transform duration-300 ${isOpen ? "translate-x-0" : "-translate-x-[120%]"
+          }`}
       >
         <nav className="mt-4 flex flex-col gap-4 px-3 text-lg font-semibold">
           <div>
             <Link
               href="/"
               onClick={onClose}
-              className={`flex items-center justify-between rounded-2xl px-5 py-4 transition ${
-                isHomeActive ? activeMenuClass : defaultMenuClass
-              }`}
+              className={`flex items-center justify-between rounded-2xl px-5 py-4 transition ${isHomeActive ? activeMenuClass : defaultMenuClass
+                }`}
             >
               <span className="flex items-center gap-4">
                 <Home size={28} />
@@ -86,9 +97,8 @@ export default function Sidebar({
             <Link
               href="/mypage"
               onClick={handleProtectedClick}
-              className={`flex items-center gap-4 rounded-2xl px-5 py-4 transition ${
-                isMypageActive ? activeMenuClass : defaultMenuClass
-              }`}
+              className={`flex items-center gap-4 rounded-2xl px-5 py-4 transition ${isMypageActive ? activeMenuClass : defaultMenuClass
+                }`}
             >
               <UserRound size={28} />
               마이페이지
@@ -111,9 +121,8 @@ export default function Sidebar({
                 <span>오답노트</span>
                 <ChevronRight
                   size={18}
-                  className={`transition-transform ${
-                    isWrongNoteOpen ? "rotate-90" : ""
-                  }`}
+                  className={`transition-transform ${isWrongNoteOpen ? "rotate-90" : ""
+                    }`}
                 />
               </button>
 
@@ -140,11 +149,10 @@ export default function Sidebar({
               <Link
                 href="/setting"
                 onClick={handleProtectedClick}
-                className={`${
-                  pathname.startsWith("/setting")
-                    ? "font-bold text-blue-600"
-                    : "hover:text-blue-600"
-                }`}
+                className={`${pathname.startsWith("/setting")
+                  ? "font-bold text-blue-600"
+                  : "hover:text-blue-600"
+                  }`}
               >
                 계정 관리
               </Link>
@@ -152,26 +160,22 @@ export default function Sidebar({
           </div>
 
           <div>
-            <Link
-              href="/exams"
-              onClick={handleProtectedClick}
-              className={`flex items-center gap-4 rounded-2xl px-5 py-4 transition ${
-                isExamActive ? activeMenuClass : defaultMenuClass
-              }`}
+            <div
+              className={`flex cursor-default items-center gap-4 rounded-2xl px-5 py-4 transition ${isExamActive ? activeMenuClass : defaultMenuClass
+                }`}
             >
               <ClipboardList size={28} />
               기출문제
-            </Link>
+            </div>
 
             <div className="ml-[68px] mt-3 flex flex-col gap-4 text-base font-medium text-slate-700">
               <Link
                 href="/exam/full"
                 onClick={handleProtectedClick}
-                className={`${
-                  pathname === "/exam/full"
-                    ? "font-bold text-blue-600"
-                    : "hover:text-blue-600"
-                }`}
+                className={`${pathname === "/exam/full"
+                  ? "font-bold text-blue-600"
+                  : "hover:text-blue-600"
+                  }`}
               >
                 전체 회차 풀기
               </Link>
@@ -179,11 +183,10 @@ export default function Sidebar({
               <Link
                 href="/exam/single"
                 onClick={handleProtectedClick}
-                className={`${
-                  pathname === "/exam/single"
-                    ? "font-bold text-blue-600"
-                    : "hover:text-blue-600"
-                }`}
+                className={`${pathname === "/exam/single"
+                  ? "font-bold text-blue-600"
+                  : "hover:text-blue-600"
+                  }`}
               >
                 한 문제씩 풀기
               </Link>
