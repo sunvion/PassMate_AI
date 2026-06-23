@@ -8,7 +8,6 @@ import {
   Home,
   UserRound,
   ClipboardList,
-  ChevronRight,
 } from "lucide-react";
 
 type SidebarProps = {
@@ -16,13 +15,9 @@ type SidebarProps = {
   onClose: () => void;
 };
 
-export default function Sidebar({
-  isOpen,
-  onClose,
-}: SidebarProps) {
+export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
 
-  const [isWrongNoteOpen, setIsWrongNoteOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
@@ -43,13 +38,18 @@ export default function Sidebar({
   }, []);
 
   const activeMenuClass = "bg-blue-50 text-blue-600 shadow-sm";
-  const defaultMenuClass = "text-slate-900 hover:bg-blue-50 hover:text-blue-600 shadow-sm";
+  const defaultMenuClass =
+    "text-slate-900 hover:bg-blue-50 hover:text-blue-600 shadow-sm";
 
   const isHomeActive = pathname === "/";
-  const isMypageActive = pathname.startsWith("/mypage") || pathname.startsWith("/setting");
-  const isExamActive = pathname.startsWith("/exam") || pathname.startsWith("/exams"); // 최신 경로 명세 수용
+  const isMypageActive =
+    pathname.startsWith("/mypage") ||
+    pathname.startsWith("/setting") ||
+    pathname.startsWith("/wrong-note");
 
-  // 비로그인 접근 시 메인 로그인 유도 섹션으로 스크롤시키는 방어용 함수 수용
+  const isExamActive =
+    pathname.startsWith("/exam") || pathname.startsWith("/exams");
+
   const handleProtectedClick = (e: MouseEvent<HTMLAnchorElement>) => {
     const token = localStorage.getItem("token");
 
@@ -59,9 +59,7 @@ export default function Sidebar({
     }
 
     e.preventDefault();
-
     window.location.href = "/#start-section";
-
     onClose();
   };
 
@@ -75,16 +73,18 @@ export default function Sidebar({
       )}
 
       <aside
-        className={`fixed left-4 top-20 z-40 h-[calc(100vh-6rem)] w-[90vw] max-w-[320px] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl transition-transform duration-300 ${isOpen ? "translate-x-0" : "-translate-x-[120%]"
-          }`}
+        className={`fixed left-4 top-20 z-40 h-[calc(100vh-6rem)] w-[90vw] max-w-[320px] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl transition-transform duration-300 ${
+          isOpen ? "translate-x-0" : "-translate-x-[120%]"
+        }`}
       >
         <nav className="mt-4 flex flex-col gap-4 px-3 text-lg font-semibold">
           <div>
             <Link
               href="/"
               onClick={onClose}
-              className={`flex items-center justify-between rounded-2xl px-5 py-4 transition ${isHomeActive ? activeMenuClass : defaultMenuClass
-                }`}
+              className={`flex items-center justify-between rounded-2xl px-5 py-4 transition ${
+                isHomeActive ? activeMenuClass : defaultMenuClass
+              }`}
             >
               <span className="flex items-center gap-4">
                 <Home size={28} />
@@ -97,8 +97,9 @@ export default function Sidebar({
             <Link
               href="/mypage"
               onClick={handleProtectedClick}
-              className={`flex items-center gap-4 rounded-2xl px-5 py-4 transition ${isMypageActive ? activeMenuClass : defaultMenuClass
-                }`}
+              className={`flex items-center gap-4 rounded-2xl px-5 py-4 transition ${
+                isMypageActive ? activeMenuClass : defaultMenuClass
+              }`}
             >
               <UserRound size={28} />
               마이페이지
@@ -108,51 +109,35 @@ export default function Sidebar({
               <Link
                 href="/mypage"
                 onClick={handleProtectedClick}
-                className={`${pathname === "/mypage" ? "font-bold text-blue-600" : "hover:text-blue-600"}`}
+                className={`${
+                  pathname === "/mypage"
+                    ? "font-bold text-blue-600"
+                    : "hover:text-blue-600"
+                }`}
               >
                 학습 통계
               </Link>
 
-              <button
-                type="button"
-                onClick={() => setIsWrongNoteOpen(!isWrongNoteOpen)}
-                className="flex items-center justify-between text-left hover:text-blue-600"
+              <Link
+                href="/wrong-note"
+                onClick={handleProtectedClick}
+                className={`${
+                  pathname.startsWith("/wrong-note")
+                    ? "font-bold text-blue-600"
+                    : "hover:text-blue-600"
+                }`}
               >
-                <span>오답노트</span>
-                <ChevronRight
-                  size={18}
-                  className={`transition-transform ${isWrongNoteOpen ? "rotate-90" : ""
-                    }`}
-                />
-              </button>
-
-              {isWrongNoteOpen && (
-                <div className="ml-4 flex flex-col gap-3 text-sm text-slate-600">
-                  <Link
-                    href="/mypage"
-                    onClick={handleProtectedClick}
-                    className="hover:text-blue-600"
-                  >
-                    AI 학습 도우미
-                  </Link>
-
-                  <Link
-                    href="/wrong-note/review"
-                    onClick={handleProtectedClick}
-                    className="hover:text-blue-600"
-                  >
-                    복습
-                  </Link>
-                </div>
-              )}
+                오답노트
+              </Link>
 
               <Link
                 href="/setting"
                 onClick={handleProtectedClick}
-                className={`${pathname.startsWith("/setting")
-                  ? "font-bold text-blue-600"
-                  : "hover:text-blue-600"
-                  }`}
+                className={`${
+                  pathname.startsWith("/setting")
+                    ? "font-bold text-blue-600"
+                    : "hover:text-blue-600"
+                }`}
               >
                 계정 관리
               </Link>
@@ -161,8 +146,9 @@ export default function Sidebar({
 
           <div>
             <div
-              className={`flex cursor-default items-center gap-4 rounded-2xl px-5 py-4 transition ${isExamActive ? activeMenuClass : defaultMenuClass
-                }`}
+              className={`flex cursor-default items-center gap-4 rounded-2xl px-5 py-4 transition ${
+                isExamActive ? activeMenuClass : defaultMenuClass
+              }`}
             >
               <ClipboardList size={28} />
               기출문제
@@ -172,10 +158,11 @@ export default function Sidebar({
               <Link
                 href="/exam/full"
                 onClick={handleProtectedClick}
-                className={`${pathname === "/exam/full"
-                  ? "font-bold text-blue-600"
-                  : "hover:text-blue-600"
-                  }`}
+                className={`${
+                  pathname === "/exam/full"
+                    ? "font-bold text-blue-600"
+                    : "hover:text-blue-600"
+                }`}
               >
                 전체 회차 풀기
               </Link>
@@ -183,10 +170,11 @@ export default function Sidebar({
               <Link
                 href="/exam/single"
                 onClick={handleProtectedClick}
-                className={`${pathname === "/exam/single"
-                  ? "font-bold text-blue-600"
-                  : "hover:text-blue-600"
-                  }`}
+                className={`${
+                  pathname === "/exam/single"
+                    ? "font-bold text-blue-600"
+                    : "hover:text-blue-600"
+                }`}
               >
                 한 문제씩 풀기
               </Link>

@@ -65,7 +65,7 @@ export default function QuestionCard({
 
                   <div className="flex-1">
                     <div className="flex gap-3 text-base font-medium text-slate-900">
-                      <span>{choice.number}.</span>
+                      <span>{choice.number}</span>
                       {choice.text && <span>{choice.text}</span>}
                     </div>
 
