@@ -1,7 +1,7 @@
 // 실제 시험
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 
 import Header from "@/components/Header";
@@ -9,6 +9,7 @@ import Sidebar from "@/components/Sidebar";
 import SolveHeader from "@/components/exams/SolveHeader";
 import QuestionCard from "@/components/exams/QuestionCard";
 import QuestionNavigator from "@/components/exams/QuestionNavigator";
+import SubmitConfirmModal from "@/components/exams/SubmitConfirmModal";
 
 import { getExamQuestions, submitBulkAnswers } from "@/lib/examApi";
 import { Question, SelectedAnswers } from "@/types/exam";
@@ -24,6 +25,27 @@ export default function ExamSolvePage() {
   const subject = searchParams.get("subject") || "";
   const year = searchParams.get("year") || "";
 
+  const getExamTypeLabel = (examType: string) => {
+    switch (examType) {
+      case "CS_GENERAL":
+        return "국가직";
+
+      case "CS_LOCAL":
+        return "지방직";
+
+      case "DRIVERS_LICENSE_1":
+        return "운전면허 1종";
+
+      case "DRIVERS_LICENSE_2":
+        return "운전면허 2종";
+
+      default:
+        return examType;
+    }
+  };
+
+  const displayTitle = `${year} ${subject} ${getExamTypeLabel(examType)}`;
+
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -32,6 +54,7 @@ export default function ExamSolvePage() {
   const questionRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+  const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
 
   const answeredCount = Object.keys(answers).length;
   const progressPercent =
@@ -39,6 +62,9 @@ export default function ExamSolvePage() {
       ? Math.round((answeredCount / questions.length) * 100)
       : 0;
 
+  const unansweredNumbers = questions
+    .filter((question) => answers[question.id] === undefined)
+    .map((question) => question.number);
 
   useEffect(() => {
     const fetchQuestions = async () => {
@@ -52,14 +78,16 @@ export default function ExamSolvePage() {
           year,
         });
 
+        console.log("첫 번째 문제:", data.questions[0]);
+
         const formattedQuestions = data.questions
           .map((q: any) => ({
             id: q.id,
             number: q.number,
-            text: q.question,
-            imageUrl: q.image_url,
-            explanation: q.explanation,
-            answer: q.answer,
+            text: q.text ?? q.question ?? "",
+            imageUrl: q.imageUrl ?? q.image_url ?? null,
+            explanation: q.explanation ?? null,
+            answer: Array.isArray(q.answer) ? q.answer.map(Number) : [Number(q.answer)],
             choices: Object.entries(q.options ?? {}).map(([number, text]) => ({
               id: Number(number),
               number: Number(number),
@@ -136,26 +164,60 @@ export default function ExamSolvePage() {
     }
   };
 
-  const handleSubmit = async () => {
-    if (Object.keys(answers).length < questions.length) {
-      const ok = window.confirm(
-        "아직 풀지 않은 문제가 있습니다. 그래도 제출할까요?"
-      );
-
-      if (!ok) return;
-    }
-
+  const submitExam = async () => {
     try {
-      const result = await submitBulkAnswers(examId, answers);
+      const result = await submitBulkAnswers(examId, answers, questions);
+
       console.log("제출 결과:", result);
 
-      alert("제출이 완료되었습니다.");
+      console.log(
+        "채점 확인:",
+        questions.map((q) => ({
+          number: q.number,
+          selected: answers[q.id],
+          answer: q.answer,
+          isCorrect: q.answer.map(Number).includes(Number(answers[q.id])),
+        }))
+      );
 
-      router.push("/exam/full");
+      const totalCount = questions.length;
+
+      const correctCount = questions.filter((question) => {
+        const selectedAnswer = answers[question.id];
+
+        const correctAnswers = question.answer.map(Number);
+
+        return correctAnswers.includes(Number(selectedAnswer));
+      }).length;
+
+      const wrongCount = totalCount - correctCount;
+      const score =
+        totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : 0;
+
+      const query = new URLSearchParams({
+        exam_type: examType,
+        subject,
+        year,
+        total: String(totalCount),
+        correct: String(correctCount),
+        wrong: String(wrongCount),
+        score: String(score),
+      });
+
+      router.push(`/exam/full/result?${query.toString()}`);
     } catch (error) {
       console.error(error);
       alert("제출 중 오류가 발생했습니다.");
     }
+  };
+
+  const handleSubmit = async () => {
+    if (Object.keys(answers).length < questions.length) {
+      setIsSubmitModalOpen(true);
+      return;
+    }
+
+    await submitExam();
   };
 
   if (isLoading) {
@@ -191,13 +253,12 @@ export default function ExamSolvePage() {
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
       <Header onMenuClick={() => setIsMenuOpen(true)} onLoginClick={() => { }} />
-
       <Sidebar isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
 
       <section className="pt-16">
         <div className="min-h-screen bg-white">
           <SolveHeader
-            title={title}
+            title={displayTitle}
             currentNumber={currentIndex + 1}
             totalCount={questions.length}
             answeredCount={answeredCount}
@@ -218,6 +279,7 @@ export default function ExamSolvePage() {
                   <QuestionCard
                     question={question}
                     selectedChoice={answers[question.id]}
+                    examType={examType}
                     onSelectChoice={handleSelectChoice}
                   />
                 </div>
@@ -235,6 +297,23 @@ export default function ExamSolvePage() {
           </div>
         </div>
       </section>
+
+      {isSubmitModalOpen && (
+        <SubmitConfirmModal
+          totalCount={questions.length}
+          answeredCount={answeredCount}
+          unansweredNumbers={unansweredNumbers}
+          onClose={() => setIsSubmitModalOpen(false)}
+          onSubmitAnyway={() => {
+            setIsSubmitModalOpen(false);
+            submitExam();
+          }}
+          onMoveQuestion={(index) => {
+            setIsSubmitModalOpen(false);
+            handleMoveQuestion(index);
+          }}
+        />
+      )}
     </main>
   );
 }

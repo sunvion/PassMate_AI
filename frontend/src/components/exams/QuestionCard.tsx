@@ -3,15 +3,18 @@ import { Question } from "@/types/exam";
 type QuestionCardProps = {
   question: Question;
   selectedChoice?: number;
+  examType: string;
   onSelectChoice: (questionId: number, choiceNumber: number) => void;
 };
 
 export default function QuestionCard({
   question,
   selectedChoice,
+  examType,
   onSelectChoice,
 }: QuestionCardProps) {
   const choices = question.choices ?? [];
+  const isDriverLicense = examType.startsWith("DRIVERS_LICENSE");
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-8">
@@ -19,9 +22,11 @@ export default function QuestionCard({
         문제 {question.number}.
       </h2>
 
-      <p className="whitespace-pre-line text-xl font-semibold leading-relaxed text-slate-900">
-        {question.text}
-      </p>
+      {isDriverLicense && question.text && (
+        <p className="whitespace-pre-line rounded-xl bg-slate-50 p-5 text-lg font-semibold leading-relaxed text-slate-900">
+          {question.text}
+        </p>
+      )}
 
       {question.imageUrl && (
         <div className="mt-7 rounded-xl border border-slate-200 bg-white p-4">
@@ -47,15 +52,15 @@ export default function QuestionCard({
                 key={choice.id}
                 onClick={() => onSelectChoice(question.id, choice.number)}
                 className={`w-full rounded-xl border p-5 text-left transition ${isSelected
-                    ? "border-blue-500 bg-blue-50"
-                    : "border-slate-200 bg-white hover:border-blue-300 hover:bg-slate-50"
+                  ? "border-blue-500 bg-blue-50"
+                  : "border-slate-200 bg-white hover:border-blue-300 hover:bg-slate-50"
                   }`}
               >
                 <div className="flex items-start gap-4">
                   <span
                     className={`mt-1 flex h-5 w-5 items-center justify-center rounded-full border ${isSelected
-                        ? "border-blue-600 bg-blue-600"
-                        : "border-slate-400"
+                      ? "border-blue-600 bg-blue-600"
+                      : "border-slate-400"
                       }`}
                   >
                     {isSelected && (
