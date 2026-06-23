@@ -160,15 +160,13 @@ export default function Sidebar({
           </div>
 
           <div>
-            <Link
-              href="/exams"
-              onClick={handleProtectedClick}
-              className={`flex items-center gap-4 rounded-2xl px-5 py-4 transition ${isExamActive ? activeMenuClass : defaultMenuClass
+            <div
+              className={`flex cursor-default items-center gap-4 rounded-2xl px-5 py-4 transition ${isExamActive ? activeMenuClass : defaultMenuClass
                 }`}
             >
               <ClipboardList size={28} />
               기출문제
-            </Link>
+            </div>
 
             <div className="ml-[68px] mt-3 flex flex-col gap-4 text-base font-medium text-slate-700">
               <Link
