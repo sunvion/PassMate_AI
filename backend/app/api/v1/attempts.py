@@ -1,4 +1,5 @@
 # backend/app/api/v1/attempts.py
+import re
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
@@ -19,6 +20,37 @@ from app.schemas.history import (
 
 router = APIRouter()
 
+
+def check_answers_match(user_ans: Any, correct_ans: Any, is_civil_service: bool = False) -> bool:
+    """
+    시험 유형에 맞춰 정답을 검증합니다.
+    - 운전면허 (Default): 요구하는 복수 정답과 완벽히 일치해야 함 (user_set == correct_set)
+    - 공무원 (is_civil_service=True): 복수 정답 중 하나만 맞혀도 인정 (user_set이 correct_set의 부분집합)
+    """
+    def normalize_to_set(ans: Any) -> set:
+        if ans is None:
+            return set()
+        if isinstance(ans, list):
+            ans = "".join(map(str, ans))
+        return set(re.findall(r'[1-5]', str(ans)))
+
+    user_set = normalize_to_set(user_ans)
+    correct_set = normalize_to_set(correct_ans)
+
+    # 아무것도 마킹하지 않은 경우 무조건 오답 처리
+    if not user_set or not correct_set:
+        return False
+
+    if is_civil_service:
+        # 🌟 공무원 시험 규격: 유저가 제출한 번호들이 정답 집합 내에 존재하면 정답 인정
+        # 예: 정답이 {1, 2}일 때 유저가 {1}만 고르거나, {2}만 고르거나, {1, 2}를 고르면 정답 처리
+        # (단, {1, 3}처럼 틀린 번호가 섞여 있으면 False)
+        return user_set.issubset(correct_set)
+    else:
+        # 🌟 운전면허 시험 규격: 복수 정답을 모두 완벽하게 맞혀야만 인정
+        return user_set == correct_set
+
+
 @router.post("/single", response_model=AttemptResultResponse, summary="단일 문제 즉시 채점 및 기록 (옵션 A)")
 async def submit_single_question(
     payload: SingleAttemptCreate,
@@ -38,8 +70,14 @@ async def submit_single_question(
     if not question:
         raise HTTPException(status_code=404, detail="존재하지 않는 문제입니다.")
 
-    # DB에 저장된 정답 배열(JSONB)과 유저가 마킹한 배열 데이터가 일치하는지 판별
-    is_correct = question.answer == payload.selected_option
+    # 🌟 [시험 유형 판별]: 문제의 exam_type이나 subject를 기반으로 공무원 시험 여부 확인
+    is_civil_service = (
+        getattr(question, 'exam_type', '') == "CS_GENERAL" or 
+        "컴퓨터일반" in getattr(question, 'subject', '')
+    )
+
+    # 분기된 채점 로직 적용
+    is_correct = check_answers_match(payload.selected_option, question.answer, is_civil_service=is_civil_service)
 
     # 🌟 [핵심 교정]: commit이 발생하여 객체가 만료되기 전에 리턴할 데이터를 미리 로컬 변수에 스냅샷 백업
     q_id = question.id
@@ -91,7 +129,14 @@ async def submit_bulk_exam(
         if not question:
             continue
         
-        is_correct = question.answer == attempt.selected_option
+        # 🌟 [시험 유형 판별]: 문제의 exam_type이나 subject를 기반으로 공무원 시험 여부 확인
+        is_civil_service = (
+            getattr(question, 'exam_type', '') == "CS_GENERAL" or 
+            "컴퓨터일반" in getattr(question, 'subject', '')
+        )
+
+        # 분기된 채점 로직 적용
+        is_correct = check_answers_match(attempt.selected_option, question.answer, is_civil_service=is_civil_service)
         if is_correct:
             correct_count += 1
 
