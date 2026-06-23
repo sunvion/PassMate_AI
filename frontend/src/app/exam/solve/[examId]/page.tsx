@@ -1,7 +1,7 @@
 // 실제 시험
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 
 import Header from "@/components/Header";
@@ -29,6 +29,7 @@ export default function ExamSolvePage() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<SelectedAnswers>({});
+  const questionRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -94,13 +95,39 @@ export default function ExamSolvePage() {
     }));
   };
 
+  useEffect(() => {
+    const handleScroll = () => {
+      let nextIndex = currentIndex;
+
+      questionRefs.current.forEach((el, index) => {
+        if (!el) return;
+
+        const rect = el.getBoundingClientRect();
+
+        if (rect.top <= 160 && rect.bottom >= 184) {
+          nextIndex = index;
+        }
+      });
+
+      if (nextIndex !== currentIndex) {
+        setCurrentIndex(nextIndex);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [currentIndex]);
+
   const handleMoveQuestion = (index: number) => {
     setCurrentIndex(index);
 
     const el = document.getElementById(`question-${index}`);
 
     if (el) {
-      const y = el.getBoundingClientRect().top + window.scrollY - 95;
+      const y = el.getBoundingClientRect().top + window.scrollY - 184;
 
       window.scrollTo({
         top: y,
@@ -167,7 +194,7 @@ export default function ExamSolvePage() {
 
       <Sidebar isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
 
-      <section className="pt-24">
+      <section className="pt-16">
         <div className="min-h-screen bg-white">
           <SolveHeader
             title={title}
@@ -181,7 +208,13 @@ export default function ExamSolvePage() {
           <div className="mx-auto grid w-full max-w-6xl grid-cols-[1fr_320px] gap-6 bg-slate-50 px-8 py-8">
             <div className="space-y-8">
               {questions.map((question, index) => (
-                <div key={question.id} id={`question-${index}`}>
+                <div
+                  key={question.id}
+                  id={`question-${index}`}
+                  ref={(el) => {
+                    questionRefs.current[index] = el;
+                  }}
+                >
                   <QuestionCard
                     question={question}
                     selectedChoice={answers[question.id]}
@@ -191,7 +224,7 @@ export default function ExamSolvePage() {
               ))}
             </div>
 
-            <div className="sticky top-24 self-start">
+            <div className="sticky top-[184px] self-start">
               <QuestionNavigator
                 questions={questions}
                 currentIndex={currentIndex}
