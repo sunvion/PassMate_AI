@@ -3,6 +3,10 @@ from pydantic import BaseModel, ConfigDict
 from typing import List, Optional
 from datetime import datetime
 
+# =================================================================
+# 📊 1. 홈 대시보드 & 회차별 성적표 도메인 스키마 (기존 유지)
+# =================================================================
+
 class DashboardSummaryResponse(BaseModel):
     """💡 홈 화면 '학습 요약' 3단 카드 대시보드 전송 포맷"""
     total_solved: int                  # 총 풀이 문제 수
@@ -38,27 +42,52 @@ class ExamSessionDetailResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-# 🆕 추가된 오답노트 도메인용 스키마 클래스군 
+# =================================================================
+# 🆕 2. 제출 회차별 독립 오답노트 도메인 스키마 (신규 추가)
+# =================================================================
 
-class WrongExamSummaryResponse(BaseModel):
-    """💡 오답노트 메인 화면용 목록 요약 데이터 포맷"""
-    exam_type: str
-    year: Optional[int]
-    subject: str
-    wrong_count: int                   # 유저가 해당 과목에서 틀린 총 문항 수
+class WrongNotebookListElement(BaseModel):
+    """💡 오답노트 메인 목록 조회용 개별 원소 포맷 (GET /wrong-notebooks)"""
+    id: int                            # 오답노트 고유 ID (wrong_notebook_id)
+    title: str                         # 오답노트 네이밍 (중복 방지 접미사 포함)
+    exam_type: str                     # 시험 직렬 종류 (CS_GENERAL, CS_LOCAL 등)
+    year: Optional[int]                # 기출 연도
+    subject: str                       # 과목 명칭 (컴퓨터일반 등)
+    wrong_count: int                   # 해당 회차에서 틀린 문제 수 (status = 'wrong')
+    unsolved_count: int                # 해당 회차에서 안 푼 문제 수 (status = 'unsolved')
+    total_count: int                   # 오답노트에 귀속된 총 문항 수 (wrong + unsolved)
+    created_at: str                    # 생성일자 포맷 스냅샷 (예: "2026-06-24")
 
     model_config = ConfigDict(from_attributes=True)
 
 
-class WrongQuestionDetailResponse(BaseModel):
-    """💡 특정 과목 오답노트 진입 시 노출할 개별 문제 상세 피드백 데이터 포맷"""
+class WrongNotebookItemDetail(BaseModel):
+    """💡 특정 오답노트 상세 내부의 문항별 원본 데이터 및 채점 정보 스냅샷"""
     question_id: int
-    question: str                      # 원본 문제 본문 질문 내용
-    options: dict                      # questions 테이블의 원본 사지/오지 선다 보기 데이터 (JSONB 매칭)
-    selected_option: List[int]         # 풀이 기록 테이블에 남아있는 유저의 마킹 데이터
-    correct_answer: List[int]          # 원본 문제 테이블에 기록된 실제 정답 데이터
-    explanation: Optional[str] = None  # 문제 해설 텍스트 데이터
-    is_correct: bool                   # 항상 False 상태(오답노트이기 때문)
-    submitted_at: datetime             # 최초 오답 제출 일시
+    question: str                      # 원본 문제 질문 본문
+    options: dict                      # 사지/오지 선다 보기 딕셔너리 (JSONB 맵핑)
+    selected_option: List[int]         # 사용자가 마킹했던 보기 배열 (안 풀었으면 [])
+    correct_answer: List[int]          # 실제 시스템 정답 번호 배열
+    is_correct: bool                   # 정답 여부 (오답노트 아이템이므로 기본 False)
+    status: str                        # 'wrong' (틀린 문제) 또는 'unsolved' (안 푼 문제) 구분자
+    explanation: Optional[str] = None  # 문항 전용 상세 해설 데이터
+    submitted_at: datetime             # 답안 제출 및 발급 타임스탬프
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class WrongNotebookDetailResponse(BaseModel):
+    """💡 오답노트 단일 상세 내역 응답 포맷 (GET /wrong-notebooks/{wrong_notebook_id})"""
+    id: int                            # wrong_notebook_id
+    title: str                         # 오답노트 명칭
+    exam_type: str                     # 시험 종류
+    year: Optional[int]                # 기출 연도
+    subject: str                       # 과목 명칭
+    items: List[WrongNotebookItemDetail]  # 귀속된 오답 및 미풀이 문항 통합 리스트
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class WrongNotebookUpdateTitleRequest(BaseModel):
+    """💡 오답노트 고유 제목 수정을 위한 인바운드 요청 바디 규격 (PATCH)"""
+    title: str                         # 변경하려는 새로운 오답노트 이름

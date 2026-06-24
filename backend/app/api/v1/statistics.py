@@ -1,8 +1,8 @@
 # backend/app/api/v1/statistics.py
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
-from typing import Any, List, Optional
+from typing import Any, List
 
 from app.db.session import get_db
 from app.core.security import get_current_user
@@ -10,11 +10,17 @@ from app.crud.statistics import crud_statistics
 from app.schemas.statistics import (
     DashboardSummaryResponse, 
     ExamSessionDetailResponse,
-    WrongExamSummaryResponse,        # 🆕 추가 임포트
-    WrongQuestionDetailResponse      # 🆕 추가 임포트
+    WrongNotebookListElement,       # 🆕 신규 목록 엘리먼트 DTO
+    WrongNotebookDetailResponse,     # 🆕 신규 상세 응답 DTO
+    WrongNotebookUpdateTitleRequest  # 🆕 신규 제목 변경 바디 DTO
 )
 
 router = APIRouter()
+wrong_notebook_router = APIRouter()  # 🆕 독립형 오답노트 전용 라우터 독립 분리 개설
+
+# =================================================================
+# 📊 1. 홈 대시보드 & 성적표 도메인 API (기존 유지 및 고도화)
+# =================================================================
 
 @router.get("/today-summary", response_model=DashboardSummaryResponse, summary="홈 대시보드 학습 요약 정보 반환")
 async def read_dashboard_summary(
@@ -61,36 +67,76 @@ async def clear_history(
     return {"message": "전체 풀이 이력이 성공적으로 초기화되었습니다."}
 
 
-# 🆕 오답노트 라우터 1: 전체 오답 목록 요약 통계 그룹 리스트 조회
-@router.get("/wrong-notebook", response_model=List[WrongExamSummaryResponse], summary="오답노트 메인 목록 요약 조회")
-async def read_wrong_notebook_list(
+# =================================================================
+# 🆕 2. 회차별 독립형 오답노트 관리 API (프론트엔드 연동 전용 스펙)
+# =================================================================
+
+@wrong_notebook_router.get("", response_model=List[WrongNotebookListElement], summary="오답노트 목록 조회")
+async def read_wrong_notebooks(
     current_user: Any = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """현재 로그인 유저가 틀린(is_correct=False) 문제들을 과목/직렬별로 묶어 카운트 통계를 리턴합니다."""
+    """현재 로그인한 사용자가 발급받은 전체 오답노트의 요약 목록(틀린 문제 수, 안 푼 문제 수 포함)을 조회합니다."""
     user_res = await db.execute(text("SELECT id FROM users WHERE email = :email"), {"email": current_user})
     user_id = user_res.scalar()
     if not user_id:
         raise HTTPException(status_code=404, detail="유저를 찾을 수 없습니다.")
 
-    return await crud_statistics.get_user_wrong_summary(db=db, user_id=user_id)
+    return await crud_statistics.get_wrong_notebooks_list(db=db, user_id=user_id)
 
 
-# 🆕 오답노트 라우터 2: 선택한 특정 시험 카테고리에 해당하는 오답들의 문항 원본 상세 조회
-@router.get("/wrong-notebook/details", response_model=List[WrongQuestionDetailResponse], summary="특정 과목 오답노트 상세 조회")
-async def read_wrong_notebook_details(
-    exam_type: str = Query(..., description="시험 종류 필터 (예: CS_GENERAL)"),
-    subject: str = Query(..., description="과목 분류 명칭 필터 (예: 컴퓨터일반)"),
-    year: Optional[int] = Query(None, description="선택적 기출 연도 필터"),
+@wrong_notebook_router.get("/{wrong_notebook_id}", response_model=WrongNotebookDetailResponse, summary="오답노트 상세 조회")
+async def read_wrong_notebook_detail(
+    wrong_notebook_id: int,
     current_user: Any = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """사용자가 선택한 특정 시험 분류군의 모든 오답들과 해설, 원본 보기 포맷 데이터를 결합하여 반환합니다."""
+    """특정 오답노트 내부의 원본 문제 문항 리스트 및 내가 마킹한 오답, 정답 분석 리포트를 일괄 상세 조회합니다."""
     user_res = await db.execute(text("SELECT id FROM users WHERE email = :email"), {"email": current_user})
     user_id = user_res.scalar()
     if not user_id:
         raise HTTPException(status_code=404, detail="유저를 찾을 수 없습니다.")
 
-    return await crud_statistics.get_user_wrong_details(
-        db=db, user_id=user_id, exam_type=exam_type, subject=subject, year=year
+    detail = await crud_statistics.get_wrong_notebook_detail(db=db, user_id=user_id, notebook_id=wrong_notebook_id)
+    if not detail:
+        raise HTTPException(status_code=404, detail="해당 오답노트가 존재하지 않거나 접근 권한이 없습니다.")
+    return detail
+
+
+@wrong_notebook_router.patch("/{wrong_notebook_id}", summary="오답노트 이름 수정")
+async def update_wrong_notebook_title(
+    wrong_notebook_id: int,
+    payload: WrongNotebookUpdateTitleRequest,
+    current_user: Any = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """사용자가 직접 오답노트의 고유 타이틀 명칭을 커스텀하게 수정합니다."""
+    user_res = await db.execute(text("SELECT id FROM users WHERE email = :email"), {"email": current_user})
+    user_id = user_res.scalar()
+    if not user_id:
+        raise HTTPException(status_code=404, detail="유저를 찾을 수 없습니다.")
+
+    success = await crud_statistics.update_wrong_notebook_title(
+        db=db, user_id=user_id, notebook_id=wrong_notebook_id, title=payload.title
     )
+    if not success:
+        raise HTTPException(status_code=404, detail="오답노트를 찾을 수 없거나 타이틀 수정 권한이 없습니다.")
+    return {"message": "오답노트 제목이 수정되었습니다."}
+
+
+@wrong_notebook_router.delete("/{wrong_notebook_id}", summary="오답노트 개별 삭제")
+async def delete_wrong_notebook(
+    wrong_notebook_id: int,
+    current_user: Any = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """특정 회차의 오답노트 세션을 개별 삭제합니다. (전체 풀이 이력 로그의 유실 없이 오답노트만 격리 삭제)"""
+    user_res = await db.execute(text("SELECT id FROM users WHERE email = :email"), {"email": current_user})
+    user_id = user_res.scalar()
+    if not user_id:
+        raise HTTPException(status_code=404, detail="유저를 찾을 수 없습니다.")
+
+    success = await crud_statistics.delete_wrong_notebook(db=db, user_id=user_id, notebook_id=wrong_notebook_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="오답노트를 찾을 수 없거나 삭제 권한이 없습니다.")
+    return {"message": "오답노트가 삭제되었습니다."}
