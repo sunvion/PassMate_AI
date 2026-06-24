@@ -74,6 +74,8 @@ export async function submitBulkAnswers(
     })),
   };
 
+  console.log("제출 body:", body);
+
   const token = localStorage.getItem("token");
 
   const res = await fetch(`${API_BASE_URL}/api/v1/attempts/bulk`, {

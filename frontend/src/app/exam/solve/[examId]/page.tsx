@@ -170,27 +170,16 @@ export default function ExamSolvePage() {
 
       console.log("제출 결과:", result);
 
-      console.log(
-        "채점 확인:",
-        questions.map((q) => ({
-          number: q.number,
-          selected: answers[q.id],
-          answer: q.answer,
-          isCorrect: q.answer.map(Number).includes(Number(answers[q.id])),
-        }))
-      );
-
       const totalCount = questions.length;
 
-      const correctCount = questions.filter((question) => {
-        const selectedAnswer = answers[question.id];
+      const resultList = result.results ?? [];
 
-        const correctAnswers = question.answer.map(Number);
-
-        return correctAnswers.includes(Number(selectedAnswer));
-      }).length;
+      const correctCount = resultList.filter(
+        (item: { is_correct: boolean }) => item.is_correct
+      ).length;
 
       const wrongCount = totalCount - correctCount;
+
       const score =
         totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : 0;
 
