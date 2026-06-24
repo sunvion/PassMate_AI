@@ -59,22 +59,22 @@ const studyModes: {
   title: string;
   desc: string;
 }[] = [
-  {
-    value: "10",
-    title: "랜덤 10문제",
-    desc: "가볍게 학습하기 좋아요.",
-  },
-  {
-    value: "20",
-    title: "랜덤 20문제",
-    desc: "좀 더 다양한 문제로 학습할 수 있어요.",
-  },
-  {
-    value: "all",
-    title: "전체 랜덤",
-    desc: "모든 문제 중에서 랜덤으로 계속 출제돼요.",
-  },
-];
+    {
+      value: "10",
+      title: "랜덤 10문제",
+      desc: "가볍게 학습하기 좋아요.",
+    },
+    {
+      value: "20",
+      title: "랜덤 20문제",
+      desc: "좀 더 다양한 문제로 학습할 수 있어요.",
+    },
+    {
+      value: "all",
+      title: "전체 랜덤",
+      desc: "모든 문제 중에서 랜덤으로 계속 출제돼요.",
+    },
+  ];
 
 export default function OneQuestionPage() {
   const router = useRouter();
@@ -94,7 +94,18 @@ export default function OneQuestionPage() {
         setIsLoading(true);
         setErrorMessage("");
 
-        const data = await getSingleStudyExams();
+        const data = await Promise.race([
+          getSingleStudyExams(),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("API 요청 시간이 초과됐어요.")), 8000)
+          ),
+        ]);
+
+        console.log("한 문제씩 학습 데이터:", data);
+
+        if (!Array.isArray(data)) {
+          throw new Error("API 응답이 배열 형태가 아니에요.");
+        }
 
         setStudyExams(data);
 
@@ -102,7 +113,7 @@ export default function OneQuestionPage() {
           setOpenExamIds([data[0].id]);
         }
       } catch (error) {
-        console.error(error);
+        console.error("한 문제씩 학습 데이터 조회 실패:", error);
         setErrorMessage("한 문제씩 학습 데이터를 불러오지 못했어요.");
       } finally {
         setIsLoading(false);
@@ -186,7 +197,7 @@ export default function OneQuestionPage() {
     <main className="min-h-screen bg-slate-50 text-slate-900">
       <Header
         onMenuClick={() => setIsMenuOpen(true)}
-        onLoginClick={() => {}}
+        onLoginClick={() => { }}
       />
 
       <Sidebar
@@ -338,9 +349,8 @@ export default function OneQuestionPage() {
 
                     <ChevronDown
                       size={24}
-                      className={`text-slate-400 transition duration-300 ${
-                        isOpen ? "rotate-180" : ""
-                      }`}
+                      className={`text-slate-400 transition duration-300 ${isOpen ? "rotate-180" : ""
+                        }`}
                     />
                   </button>
 
@@ -464,11 +474,10 @@ export default function OneQuestionPage() {
                   className="flex w-full items-start gap-4 rounded-2xl p-3 text-left transition hover:bg-slate-50"
                 >
                   <span
-                    className={`mt-1 flex h-5 w-5 items-center justify-center rounded-full border ${
-                      studyMode === mode.value
+                    className={`mt-1 flex h-5 w-5 items-center justify-center rounded-full border ${studyMode === mode.value
                         ? "border-blue-600"
                         : "border-slate-300"
-                    }`}
+                      }`}
                   >
                     {studyMode === mode.value && (
                       <span className="h-2.5 w-2.5 rounded-full bg-blue-600" />
