@@ -10,6 +10,8 @@ export type Question = {
   number: number;
   text: string;
   imageUrl?: string | null;
+  explanation?: string | null;
+  answer: number[];
   choices: Choice[];
 };
 

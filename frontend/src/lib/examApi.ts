@@ -61,20 +61,29 @@ export async function getExamQuestions(params: {
 
 export async function submitBulkAnswers(
   examId: string,
-  answers: SelectedAnswers
+  answers: SelectedAnswers,
+  questions: Question[]
 ) {
   const body = {
     exam_id: Number(examId),
-    answers: Object.entries(answers).map(([questionId, selectedChoice]) => ({
-      question_id: Number(questionId),
-      selected_choice: selectedChoice,
+    attempts: questions.map((question) => ({
+      question_id: question.id,
+      selected_option:
+        answers[question.id] !== undefined ? [answers[question.id]] : [],
+      time: 0,
     })),
   };
 
+  console.log("제출 body:", body);
+
+  const token = localStorage.getItem("token");
+
   const res = await fetch(`${API_BASE_URL}/api/v1/attempts/bulk`, {
     method: "POST",
+    mode: "cors",
     headers: {
       "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify(body),
   });

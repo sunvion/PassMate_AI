@@ -14,6 +14,33 @@ type ExamMeta = {
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
+const getExamTypeLabel = (examType: string) => {
+  switch (examType) {
+    case "CS_GENERAL":
+      return "국가직";
+
+    case "CS_LOCAL":
+      return "지방직";
+
+    case "DRIVERS_LICENSE_1":
+    case "DRIVERS_LICENSE_2":
+      return "필기시험";
+
+    default:
+      return examType;
+  }
+};
+
+const getSubjectLabel = (subject: string) => {
+  switch (subject) {
+    case "운전면허 학과":
+      return "운전면허 필기";
+
+    default:
+      return subject;
+  }
+};
+
 export default function FullExamPage() {
   const router = useRouter();
 
@@ -65,15 +92,20 @@ export default function FullExamPage() {
 
   const subjectOptions = [
     "전체",
-    ...Array.from(new Set(exams.map((exam) => exam.subject))),
+    ...Array.from(new Set(exams.map((exam) => getSubjectLabel(exam.subject)))),
   ];
 
   const filteredExams = exams.filter((exam) => {
+    const isDriverLicense = exam.exam_type.startsWith("DRIVERS_LICENSE");
+
     const yearMatched =
-      selectedYear === "전체" || String(exam.year) === selectedYear;
+      isDriverLicense ||
+      selectedYear === "전체" ||
+      String(exam.year) === selectedYear;
 
     const subjectMatched =
-      selectedSubject === "전체" || exam.subject === selectedSubject;
+      selectedSubject === "전체" ||
+      getSubjectLabel(exam.subject) === selectedSubject;
 
     return yearMatched && subjectMatched;
   });
@@ -94,7 +126,7 @@ export default function FullExamPage() {
     <main className="min-h-screen bg-slate-50 text-slate-900">
       <Header
         onMenuClick={() => setIsMenuOpen(true)}
-        onLoginClick={() => {}}
+        onLoginClick={() => { }}
       />
 
       <Sidebar isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
@@ -119,21 +151,6 @@ export default function FullExamPage() {
             <div className="mt-6 grid gap-4 md:grid-cols-3">
               <div>
                 <label className="mb-2 block text-sm font-semibold text-slate-700">
-                  연도
-                </label>
-                <select
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(e.target.value)}
-                  className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-slate-900 outline-none focus:border-blue-500"
-                >
-                  {yearOptions.map((year) => (
-                    <option key={year}>{year}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-700">
                   과목
                 </label>
                 <select
@@ -147,6 +164,21 @@ export default function FullExamPage() {
                 </select>
               </div>
 
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-slate-700">
+                  연도
+                </label>
+                <select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(e.target.value)}
+                  className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-slate-900 outline-none focus:border-blue-500"
+                >
+                  {yearOptions.map((year) => (
+                    <option key={year}>{year}</option>
+                  ))}
+                </select>
+              </div>
+
               <div className="flex items-end">
                 <button
                   type="button"
@@ -156,6 +188,10 @@ export default function FullExamPage() {
                 </button>
               </div>
             </div>
+
+            <p className="mt-3 text-sm text-slate-400">
+              해당 조건 중 하나 이상 설정해 주세요.
+            </p>
           </section>
 
           <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -185,12 +221,16 @@ export default function FullExamPage() {
                   >
                     <div>
                       <div className="flex items-center gap-3">
-                        <h3 className="text-lg font-extrabold">
-                          {exam.year}년
+                        <h3 className="text-lg font-extrabold text-slate-900">
+                          {getSubjectLabel(exam.subject)}
                         </h3>
 
                         <span className="rounded-full bg-blue-50 px-3 py-1 text-sm font-bold text-blue-600">
-                          {exam.subject}
+                          {exam.exam_type.startsWith("DRIVERS_LICENSE") ? "상시" : `${exam.year}년`}
+                        </span>
+
+                        <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-bold text-slate-600">
+                          {getExamTypeLabel(exam.exam_type)}
                         </span>
                       </div>
 
