@@ -1,8 +1,13 @@
 export type WrongNoteSummary = {
+  id: number;
+  title: string;
   exam_type: string;
   year: number | null;
   subject: string;
   wrong_count: number;
+  unsolved_count: number;
+  total_count: number;
+  created_at: string;
 };
 
 const API_BASE_URL =
@@ -18,12 +23,28 @@ function getAuthHeaders() {
 }
 
 export async function getWrongNotebookSummary(): Promise<WrongNoteSummary[]> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/statistics/wrong-notebook`, {
+  const res = await fetch(`${API_BASE_URL}/api/v1/wrong-notebooks`, {
     headers: getAuthHeaders(),
   });
 
   if (!res.ok) {
     throw new Error("오답노트 목록 조회 실패");
+  }
+
+  return res.json();
+}
+
+export async function deleteWrongNotebook(wrongNotebookId: number) {
+  const res = await fetch(
+    `${API_BASE_URL}/api/v1/wrong-notebooks/${wrongNotebookId}`,
+    {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error("오답노트 삭제 실패");
   }
 
   return res.json();

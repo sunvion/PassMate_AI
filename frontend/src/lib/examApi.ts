@@ -7,6 +7,7 @@ export async function getExamQuestions(params: {
   examType: string;
   subject: string;
   year?: string;
+  limit?: number;
 }): Promise<ExamQuestionsResponse> {
   const query = new URLSearchParams({
     exam_type: params.examType,
@@ -15,6 +16,10 @@ export async function getExamQuestions(params: {
 
   if (params.year) {
     query.append("year", params.year);
+  }
+
+  if (params.limit) {
+    query.append("limit", String(params.limit));
   }
 
   const res = await fetch(
@@ -38,7 +43,7 @@ export async function getExamQuestions(params: {
 
   let questions: Question[];
 
-  if (params.examType === "DRIVERS_LICENSE_1") {
+  if (params.examType === "DRIVERS_LICENSE_1" && !params.limit) {
     questions = [...data]
       .sort(() => Math.random() - 0.5)
       .slice(0, 40)
@@ -65,7 +70,6 @@ export async function submitBulkAnswers(
   questions: Question[]
 ) {
   const body = {
-    exam_id: Number(examId),
     attempts: questions.map((question) => ({
       question_id: question.id,
       selected_option:

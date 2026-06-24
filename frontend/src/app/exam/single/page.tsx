@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
@@ -11,6 +11,7 @@ import {
   Database,
   Folder,
   Lightbulb,
+  Loader2,
   Network,
   Search,
   ServerCog,
@@ -18,6 +19,11 @@ import {
   TrafficCone,
   X,
 } from "lucide-react";
+import {
+  getSingleStudyExams,
+  SingleStudyExam,
+  SingleStudyUnit,
+} from "@/lib/singleStudyApi";
 
 const colorMap = {
   blue: "bg-blue-50 text-blue-600",
@@ -42,180 +48,11 @@ const iconMap = {
   safety: ShieldCheck,
 };
 
-type Unit = {
-  id: number;
-  name: string;
-  questionCount: number;
-  accuracy: number;
-  wrongCount: number;
-  icon: keyof typeof iconMap;
-  color: keyof typeof colorMap;
-};
-
-type Subject = {
-  id: number;
-  name: string;
-  years: string[];
-  totalQuestionCount: number;
-  units: Unit[];
-};
-
-type ExamGroup = {
-  id: number;
-  name: string;
-  subjects: Subject[];
-};
-
-type SelectedUnit = Unit & {
-  examName: string;
+type SelectedUnit = SingleStudyUnit & {
   subjectName: string;
 };
 
 type StudyMode = "10" | "20" | "all";
-
-const studyExams: ExamGroup[] = [
-  {
-    id: 1,
-    name: "국가직 9급",
-    subjects: [
-      {
-        id: 101,
-        name: "컴퓨터일반",
-        years: ["2024", "2023"],
-        totalQuestionCount: 40,
-        units: [
-          {
-            id: 1,
-            name: "컴퓨터구조",
-            questionCount: 24,
-            accuracy: 72,
-            wrongCount: 18,
-            icon: "computer",
-            color: "blue",
-          },
-          {
-            id: 2,
-            name: "운영체제",
-            questionCount: 20,
-            accuracy: 58,
-            wrongCount: 32,
-            icon: "os",
-            color: "green",
-          },
-          {
-            id: 3,
-            name: "데이터베이스",
-            questionCount: 18,
-            accuracy: 84,
-            wrongCount: 9,
-            icon: "database",
-            color: "purple",
-          },
-          {
-            id: 4,
-            name: "네트워크",
-            questionCount: 18,
-            accuracy: 63,
-            wrongCount: 27,
-            icon: "network",
-            color: "orange",
-          },
-        ],
-      },
-    ],
-  },
-  {
-    id: 2,
-    name: "지방직 9급",
-    subjects: [
-      {
-        id: 201,
-        name: "컴퓨터일반",
-        years: ["2023", "2022"],
-        totalQuestionCount: 40,
-        units: [
-          {
-            id: 5,
-            name: "자료구조",
-            questionCount: 16,
-            accuracy: 70,
-            wrongCount: 16,
-            icon: "data",
-            color: "cyan",
-          },
-          {
-            id: 6,
-            name: "프로그래밍 언어론",
-            questionCount: 14,
-            accuracy: 68,
-            wrongCount: 14,
-            icon: "code",
-            color: "indigo",
-          },
-          {
-            id: 7,
-            name: "소프트웨어 공학",
-            questionCount: 14,
-            accuracy: 66,
-            wrongCount: 12,
-            icon: "software",
-            color: "blue",
-          },
-          {
-            id: 8,
-            name: "최신기술용어",
-            questionCount: 12,
-            accuracy: 71,
-            wrongCount: 8,
-            icon: "term",
-            color: "yellow",
-          },
-        ],
-      },
-    ],
-  },
-  {
-    id: 3,
-    name: "한국도로교통공단",
-    subjects: [
-      {
-        id: 301,
-        name: "운전면허 필기",
-        years: ["2024", "2023"],
-        totalQuestionCount: 80,
-        units: [
-          {
-            id: 9,
-            name: "도로교통법",
-            questionCount: 30,
-            accuracy: 69,
-            wrongCount: 21,
-            icon: "traffic",
-            color: "yellow",
-          },
-          {
-            id: 10,
-            name: "안전운전",
-            questionCount: 28,
-            accuracy: 74,
-            wrongCount: 15,
-            icon: "safety",
-            color: "green",
-          },
-          {
-            id: 11,
-            name: "표지판",
-            questionCount: 22,
-            accuracy: 81,
-            wrongCount: 10,
-            icon: "term",
-            color: "orange",
-          },
-        ],
-      },
-    ],
-  },
-];
 
 const studyModes: {
   value: StudyMode;
@@ -243,10 +80,37 @@ export default function OneQuestionPage() {
   const router = useRouter();
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [studyExams, setStudyExams] = useState<SingleStudyExam[]>([]);
   const [selectedUnit, setSelectedUnit] = useState<SelectedUnit | null>(null);
   const [studyMode, setStudyMode] = useState<StudyMode>("10");
   const [searchText, setSearchText] = useState("");
-  const [openExamIds, setOpenExamIds] = useState<number[]>([1]);
+  const [openExamIds, setOpenExamIds] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    async function fetchStudyExams() {
+      try {
+        setIsLoading(true);
+        setErrorMessage("");
+
+        const data = await getSingleStudyExams();
+
+        setStudyExams(data);
+
+        if (data.length > 0) {
+          setOpenExamIds([data[0].id]);
+        }
+      } catch (error) {
+        console.error(error);
+        setErrorMessage("한 문제씩 학습 데이터를 불러오지 못했어요.");
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchStudyExams();
+  }, []);
 
   const allUnits = studyExams.flatMap((exam) =>
     exam.subjects.flatMap((subject) =>
@@ -258,9 +122,7 @@ export default function OneQuestionPage() {
     )
   );
 
-  const recommendedUnit = [...allUnits].sort(
-    (a, b) => b.wrongCount - a.wrongCount
-  )[0];
+  const recommendedUnit = allUnits[0];
 
   const filteredExams = studyExams
     .map((exam) => ({
@@ -286,7 +148,7 @@ export default function OneQuestionPage() {
     }))
     .filter((exam) => exam.subjects.length > 0);
 
-  const toggleExam = (examId: number) => {
+  const toggleExam = (examId: string) => {
     setOpenExamIds((prev) =>
       prev.includes(examId)
         ? prev.filter((id) => id !== examId)
@@ -295,7 +157,7 @@ export default function OneQuestionPage() {
   };
 
   const openStudyModal = (
-    unit: Unit,
+    unit: SingleStudyUnit,
     examName: string,
     subjectName: string
   ) => {
@@ -310,9 +172,14 @@ export default function OneQuestionPage() {
   const handleStartStudy = () => {
     if (!selectedUnit) return;
 
-    // 나중에 문제풀이 페이지 생기면 이것만 수정
-    // router.push(`/exam/one/${selectedUnit.id}?mode=${studyMode}`);
-    console.log("학습 시작:", selectedUnit, studyMode);
+    const params = new URLSearchParams({
+      exam_type: selectedUnit.examType,
+      subject: selectedUnit.subject,
+      unit: selectedUnit.name,
+      mode: studyMode,
+    });
+
+    router.push(`/exam/single/solve?${params.toString()}`);
   };
 
   return (
@@ -359,7 +226,28 @@ export default function OneQuestionPage() {
           />
         </div>
 
-        {recommendedUnit && (
+        {isLoading && (
+          <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center shadow-sm">
+            <Loader2 className="mx-auto mb-4 animate-spin text-blue-600" size={36} />
+            <p className="font-bold text-slate-700">
+              실제 문제 데이터를 불러오는 중이에요.
+            </p>
+            <p className="mt-2 text-sm text-slate-500">
+              등록된 시험, 과목, 연도별 문제를 확인하고 있어요.
+            </p>
+          </div>
+        )}
+
+        {!isLoading && errorMessage && (
+          <div className="rounded-3xl border border-red-100 bg-white p-10 text-center shadow-sm">
+            <p className="font-bold text-red-600">{errorMessage}</p>
+            <p className="mt-2 text-sm text-slate-500">
+              백엔드 서버가 켜져 있는지 확인해주세요.
+            </p>
+          </div>
+        )}
+
+        {!isLoading && !errorMessage && recommendedUnit && (
           <section className="mb-8 rounded-3xl border border-blue-200 bg-white p-6 shadow-sm">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex items-center gap-5">
@@ -369,13 +257,13 @@ export default function OneQuestionPage() {
 
                 <div>
                   <span className="rounded-full bg-blue-600 px-4 py-1 text-sm font-semibold text-white">
-                    AI 추천 학습
+                    추천 학습
                   </span>
                   <h2 className="mt-3 text-xl font-bold">
-                    오답이 가장 많은 단원이에요
+                    바로 시작하기 좋은 단원이에요
                   </h2>
                   <p className="mt-1 text-sm text-slate-500">
-                    최근 오답 기록을 기준으로 1개 단원을 추천합니다.
+                    실제 문제 데이터 기준으로 학습 가능한 단원을 보여줍니다.
                   </p>
                 </div>
               </div>
@@ -400,10 +288,7 @@ export default function OneQuestionPage() {
                       {recommendedUnit.examName} · {recommendedUnit.subjectName}
                     </p>
                     <p className="text-sm text-slate-500">
-                      오답 {recommendedUnit.wrongCount}개 · 정답률{" "}
-                      <span className="font-bold text-blue-600">
-                        {recommendedUnit.accuracy}%
-                      </span>
+                      기출문제 {recommendedUnit.questionCount}개
                     </p>
                   </div>
                 </div>
@@ -425,116 +310,115 @@ export default function OneQuestionPage() {
           </section>
         )}
 
-        <section className="space-y-5">
-          {filteredExams.map((exam) => {
-            const isOpen = openExamIds.includes(exam.id);
-            const subjectCount = exam.subjects.length;
-            const unitCount = exam.subjects.reduce(
-              (sum, subject) => sum + subject.units.length,
-              0
-            );
+        {!isLoading && !errorMessage && (
+          <section className="space-y-5">
+            {filteredExams.map((exam) => {
+              const isOpen = openExamIds.includes(exam.id);
+              const subjectCount = exam.subjects.length;
+              const unitCount = exam.subjects.reduce(
+                (sum, subject) => sum + subject.units.length,
+                0
+              );
 
-            return (
-              <div
-                key={exam.id}
-                className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm"
-              >
-                <button
-                  onClick={() => toggleExam(exam.id)}
-                  className="flex w-full items-center justify-between px-6 py-5 text-left transition hover:bg-slate-50"
+              return (
+                <div
+                  key={exam.id}
+                  className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm"
                 >
-                  <div>
-                    <h2 className="text-xl font-bold">{exam.name}</h2>
-                    <p className="mt-1 text-sm text-slate-500">
-                      {subjectCount}개 과목 · {unitCount}개 단원
-                    </p>
-                  </div>
+                  <button
+                    onClick={() => toggleExam(exam.id)}
+                    className="flex w-full items-center justify-between px-6 py-5 text-left transition hover:bg-slate-50"
+                  >
+                    <div>
+                      <h2 className="text-xl font-bold">{exam.name}</h2>
+                      <p className="mt-1 text-sm text-slate-500">
+                        {subjectCount}개 과목 · {unitCount}개 단원
+                      </p>
+                    </div>
 
-                  <ChevronDown
-                    size={24}
-                    className={`text-slate-400 transition duration-300 ${
-                      isOpen ? "rotate-180" : ""
-                    }`}
-                  />
-                </button>
+                    <ChevronDown
+                      size={24}
+                      className={`text-slate-400 transition duration-300 ${
+                        isOpen ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
 
-                {isOpen && (
-                  <div className="border-t border-slate-100 px-6 py-6">
-                    {exam.subjects.map((subject) => (
-                      <div key={subject.id} className="mb-8 last:mb-0">
-                        <div className="mb-4">
-                          <h3 className="text-lg font-bold">
-                            {subject.name}
-                          </h3>
-                          <p className="mt-1 text-sm text-slate-500">
-                            {subject.years.join(", ")}년 기출 · 총{" "}
-                            {subject.totalQuestionCount}문제
-                          </p>
-                        </div>
+                  {isOpen && (
+                    <div className="border-t border-slate-100 px-6 py-6">
+                      {exam.subjects.map((subject) => (
+                        <div key={subject.id} className="mb-8 last:mb-0">
+                          <div className="mb-4">
+                            <h3 className="text-lg font-bold">
+                              {subject.name}
+                            </h3>
+                            <p className="mt-1 text-sm text-slate-500">
+                              {subject.years.join(", ")}년 기출 · 총{" "}
+                              {subject.totalQuestionCount}문제
+                            </p>
+                          </div>
 
-                        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-                          {subject.units.map((unit) => {
-                            const Icon = iconMap[unit.icon];
+                          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+                            {subject.units.map((unit) => {
+                              const Icon = iconMap[unit.icon];
 
-                            return (
-                              <button
-                                key={unit.id}
-                                onClick={() =>
-                                  openStudyModal(
-                                    unit,
-                                    exam.name,
-                                    subject.name
-                                  )
-                                }
-                                className="group flex items-center justify-between rounded-3xl border border-slate-200 bg-white p-6 text-left shadow-sm transition duration-300 hover:-translate-y-1 hover:border-blue-300 hover:shadow-md"
-                              >
-                                <div className="flex items-center gap-6">
-                                  <div
-                                    className={`flex h-20 w-20 items-center justify-center rounded-2xl transition duration-300 group-hover:scale-105 ${colorMap[unit.color]}`}
-                                  >
-                                    <Icon size={34} />
+                              return (
+                                <button
+                                  key={unit.id}
+                                  onClick={() =>
+                                    openStudyModal(
+                                      unit,
+                                      exam.name,
+                                      subject.name
+                                    )
+                                  }
+                                  className="group flex items-center justify-between rounded-3xl border border-slate-200 bg-white p-6 text-left shadow-sm transition duration-300 hover:-translate-y-1 hover:border-blue-300 hover:shadow-md"
+                                >
+                                  <div className="flex items-center gap-6">
+                                    <div
+                                      className={`flex h-20 w-20 items-center justify-center rounded-2xl transition duration-300 group-hover:scale-105 ${colorMap[unit.color]}`}
+                                    >
+                                      <Icon size={34} />
+                                    </div>
+
+                                    <div>
+                                      <h4 className="text-xl font-bold">
+                                        {unit.name}
+                                      </h4>
+                                      <p className="mt-2 text-sm text-slate-500">
+                                        기출문제 {unit.questionCount}개
+                                      </p>
+                                      <p className="mt-1 text-sm text-slate-500">
+                                        한 문제씩 랜덤 학습 가능
+                                      </p>
+                                    </div>
                                   </div>
 
-                                  <div>
-                                    <h4 className="text-xl font-bold">
-                                      {unit.name}
-                                    </h4>
-                                    <p className="mt-2 text-sm text-slate-500">
-                                      기출문제 {unit.questionCount}개
-                                    </p>
-                                    <p className="mt-1 text-sm text-slate-500">
-                                      오답 {unit.wrongCount}개 · 최근 정답률{" "}
-                                      <span className="font-bold text-blue-600">
-                                        {unit.accuracy}%
-                                      </span>
-                                    </p>
-                                  </div>
-                                </div>
-
-                                <span className="rounded-xl border border-blue-200 px-5 py-3 text-sm font-bold text-blue-600 transition group-hover:bg-blue-600 group-hover:text-white">
-                                  학습하기
-                                </span>
-                              </button>
-                            );
-                          })}
+                                  <span className="rounded-xl border border-blue-200 px-5 py-3 text-sm font-bold text-blue-600 transition group-hover:bg-blue-600 group-hover:text-white">
+                                    학습하기
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {filteredExams.length === 0 && (
+              <div className="rounded-3xl border border-slate-200 bg-white p-10 text-center shadow-sm">
+                <p className="font-bold text-slate-700">검색 결과가 없어요.</p>
+                <p className="mt-2 text-sm text-slate-500">
+                  다른 시험명, 과목명, 연도, 단원명으로 검색해보세요.
+                </p>
               </div>
-            );
-          })}
-
-          {filteredExams.length === 0 && (
-            <div className="rounded-3xl border border-slate-200 bg-white p-10 text-center shadow-sm">
-              <p className="font-bold text-slate-700">검색 결과가 없어요.</p>
-              <p className="mt-2 text-sm text-slate-500">
-                다른 시험명, 과목명, 연도, 단원명으로 검색해보세요.
-              </p>
-            </div>
-          )}
-        </section>
+            )}
+          </section>
+        )}
       </section>
 
       {selectedUnit && (
