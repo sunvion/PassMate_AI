@@ -13,7 +13,9 @@ from app.schemas.statistics import (
     WrongNotebookListElement,       # 🆕 신규 목록 엘리먼트 DTO
     WrongNotebookDetailResponse,     # 🆕 신규 상세 응답 DTO
     WrongNotebookUpdateTitleRequest  # 🆕 신규 제목 변경 바디 DTO
+    ChapterWrongCountResponse
 )
+
 
 router = APIRouter()
 wrong_notebook_router = APIRouter()  # 🆕 독립형 오답노트 전용 라우터 독립 분리 개설
@@ -140,3 +142,16 @@ async def delete_wrong_notebook(
     if not success:
         raise HTTPException(status_code=404, detail="오답노트를 찾을 수 없거나 삭제 권한이 없습니다.")
     return {"message": "오답노트가 삭제되었습니다."}
+
+
+@router.get("/chapters", response_model=List[ChapterWrongCountResponse], summary="챕터별 오답 개수 집계 조회")
+async def read_wrong_chapters(
+    current_user: Any = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    user_res = await db.execute(text("SELECT id FROM users WHERE email = :email"), {"email": current_user})
+    user_id = user_res.scalar()
+    if not user_id:
+        raise HTTPException(status_code=404, detail="유저를 찾을 수 없습니다.")
+
+    return await crud_statistics.get_wrong_count_by_chapter(db=db, user_id=user_id)

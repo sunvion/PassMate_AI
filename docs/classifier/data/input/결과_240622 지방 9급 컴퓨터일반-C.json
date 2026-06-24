@@ -1,0 +1,562 @@
+[
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2024,
+    "number": 1,
+    "question": "이미지 파일 형식에 해당하지 않는 것은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2024/question_1.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 0,
+      "x1": 4.0,
+      "x2": 360.0,
+      "y1": 100.83823446400004,
+      "y2": 217.63252246399998
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2024,
+    "number": 2,
+    "question": "DDL(Data Definition Language) 명령어에 해당하지 않는 것은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2024/question_2.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 0,
+      "x1": 4.0,
+      "x2": 360.0,
+      "y1": 217.63252246399998,
+      "y2": 334.4268104639999
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2024,
+    "number": 3,
+    "question": "8진수 543 과 10진수 124 의 합을 8진수로 표현한 것은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2024/question_3.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 0,
+      "x1": 4.0,
+      "x2": 360.0,
+      "y1": 334.4268104639999,
+      "y2": 451.22109846399997
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2024,
+    "number": 4,
+    "question": "OSI 모델에서 데이터 링크 계층의 프로토콜 데이터 단위(protocol data unit)는?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2024/question_4.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 0,
+      "x1": 4.0,
+      "x2": 360.0,
+      "y1": 451.22109846399997,
+      "y2": 587.561042464
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2024,
+    "number": 5,
+    "question": "이메일 송신 또는 수신을 위한 프로토콜에 해당하지 않는 것은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2024/question_5.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 0,
+      "x1": 4.0,
+      "x2": 360.0,
+      "y1": 587.561042464,
+      "y2": 704.355330464
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2024,
+    "number": 6,
+    "question": "UML 버전 2.0에서 구조 다이어그램에 해당하는 것만을 모두 고르면?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2024/question_6.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 0,
+      "x1": 4.0,
+      "x2": 360.0,
+      "y1": 704.355330464,
+      "y2": 909.524762464
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2024,
+    "number": 7,
+    "question": "블랙박스 테스트 기법에 해당하는 것은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2024/question_7.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 0,
+      "x1": 4.0,
+      "x2": 360.0,
+      "y1": 909.524762464,
+      "y2": 1013.1503488000001
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2024,
+    "number": 8,
+    "question": "운영체제에서 일괄 처리 시스템(batch processing system)에 대한 설명으로 옳은 것은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2024/question_8.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 0,
+      "x1": 368.0,
+      "x2": 724.0,
+      "y1": 47.83713046399998,
+      "y2": 210.07806646400002
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2024,
+    "number": 9,
+    "question": "다음은 front 다음 위치부터 rear 위치까지 유효한 원소가 들어있는 선형 큐를 보여준다. 두 개의 원소를 제거한 후 큐의 상태는?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2024/question_9.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 0,
+      "x1": 368.0,
+      "x2": 724.0,
+      "y1": 210.07806646400002,
+      "y2": 529.043986464
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2024,
+    "number": 10,
+    "question": "운영체제의 목적으로 옳지 않은 것은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2024/question_10.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 0,
+      "x1": 368.0,
+      "x2": 724.0,
+      "y1": 529.043986464,
+      "y2": 637.204610464
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2024,
+    "number": 11,
+    "question": "현재의 출력값이 현재의 입력값에 의해서만 결정되는 논리회로에 해당하지 않는 것은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2024/question_11.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 0,
+      "x1": 368.0,
+      "x2": 724.0,
+      "y1": 637.204610464,
+      "y2": 763.352034464
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2024,
+    "number": 12,
+    "question": "캐시기억장치에 대한 설명으로 옳지 않은 것은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2024/question_12.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 0,
+      "x1": 368.0,
+      "x2": 724.0,
+      "y1": 763.352034464,
+      "y2": 889.499458464
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2024,
+    "number": 13,
+    "question": "데이터 크기에 대한 설명으로 옳은 것만을 모두 고르면?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2024/question_13.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 0,
+      "x1": 368.0,
+      "x2": 724.0,
+      "y1": 889.499458464,
+      "y2": 1016.8676208
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2024,
+    "number": 14,
+    "question": "다음 C 프로그램의 출력 결과는?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2024/question_14.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 1,
+      "x1": 4.0,
+      "x2": 360.0,
+      "y1": 47.83713046399998,
+      "y2": 445.105586464
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2024,
+    "number": 15,
+    "question": "IPv4 주소 체계의 A 클래스 주소에서 호스트 ID의 비트 수는?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2024/question_15.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 1,
+      "x1": 4.0,
+      "x2": 360.0,
+      "y1": 445.105586464,
+      "y2": 526.046186464
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2024,
+    "number": 16,
+    "question": "블록체인에 대한 설명으로 옳은 것만을 모두 고르면?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2024/question_16.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 1,
+      "x1": 4.0,
+      "x2": 360.0,
+      "y1": 526.046186464,
+      "y2": 740.209018464
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2024,
+    "number": 17,
+    "question": "다음은 프로세스가 준비 큐에 도착하는 시간과 프로세스를 처리하는데 필요한 실행시간을 보여준다. 비선점 SJF(Shortest Job First) 스케줄링 알고리즘을 사용한 경우, P1, P2, P3, P4 프로세스 중에서 두 번째로 실행되는 프로세스는? (단, 프로세스 간 문맥 교환에 따른 오버헤드는 무시하며, 주어진 4개의 프로세스 외에 처리할 다른 프로세스는 없다고 가정한다)",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2024/question_17.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 1,
+      "x1": 4.0,
+      "x2": 360.0,
+      "y1": 740.209018464,
+      "y2": 1016.7477088
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2024,
+    "number": 18,
+    "question": "다음 C 언어로 작성된 코드의 시간 복잡도는? (단, n은 임의의 양의 정수이다)",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2024/question_18.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 1,
+      "x1": 368.0,
+      "x2": 724.0,
+      "y1": 47.83713046399998,
+      "y2": 274.710634464
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2024,
+    "number": 19,
+    "question": "페이지 테이블(page table)을 사용하는 가상기억장치 컴퓨터 시스템에서 TLB(Translation Lookaside Buffer)에 대한 설명으로 옳은 것은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2024/question_19.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 1,
+      "x1": 368.0,
+      "x2": 724.0,
+      "y1": 274.710634464,
+      "y2": 465.730450464
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2024,
+    "number": 20,
+    "question": "다음 파이썬 프로그램의 출력 결과는?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2024/question_20.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 1,
+      "x1": 368.0,
+      "x2": 724.0,
+      "y1": 465.730450464,
+      "y2": 1015.9083248000001
+    }
+  }
+]

@@ -71,6 +71,7 @@ class WrongNotebookItemDetail(BaseModel):
     is_correct: bool                   # 정답 여부 (오답노트 아이템이므로 기본 False)
     status: str                        # 'wrong' (틀린 문제) 또는 'unsolved' (안 푼 문제) 구분자
     explanation: Optional[str] = None  # 문항 전용 상세 해설 데이터
+    image_url: Optional[str] = None    # 💡 [정보 추가]: 기출 지문 이미지 주소 필드 개설
     submitted_at: datetime             # 답안 제출 및 발급 타임스탬프
 
     model_config = ConfigDict(from_attributes=True)
@@ -91,3 +92,13 @@ class WrongNotebookDetailResponse(BaseModel):
 class WrongNotebookUpdateTitleRequest(BaseModel):
     """💡 오답노트 고유 제목 수정을 위한 인바운드 요청 바디 규격 (PATCH)"""
     title: str                         # 변경하려는 새로운 오답노트 이름
+
+
+class ChapterWrongCountResponse(BaseModel):
+    """💡 오답노트 메인 대시보드 챕터별 오답 개수 요약 포맷"""
+    chapter: str
+    wrong_count: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+

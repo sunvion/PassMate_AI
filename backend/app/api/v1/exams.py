@@ -1,12 +1,13 @@
 # backend/app/api/v1/exams.py
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, text
 from typing import List, Optional, Any
 
 from app.db.session import get_db
 from app.crud.question import crud_question
 from app.models.question import Question
+from app.schemas.question import QuestionResponse
 
 router = APIRouter()
 
@@ -70,4 +71,18 @@ async def read_random_exam_questions(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="해당 시험 분류에 저장된 데이터 풀이 없어 랜덤 추출에 실패했습니다."
         )
+    return questions
+
+@router.get("/questions/wrong", response_model=List[QuestionResponse], summary="특정 챕터의 오답 문항 전체 리스트 조회")
+async def read_wrong_questions_by_chapter(
+    chapter: str, # 🌟 쿼리 파라미터로 수신 (?chapter=컴퓨터구조)
+    current_user: Any = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    user_res = await db.execute(text("SELECT id FROM users WHERE email = :email"), {"email": current_user})
+    user_id = user_res.scalar()
+    if not user_id:
+        raise HTTPException(status_code=404, detail="유저를 찾을 수 없습니다.")
+        
+    questions = await crud_question.get_wrong_questions_by_chapter(db=db, user_id=user_id, chapter=chapter)
     return questions

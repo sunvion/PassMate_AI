@@ -1,0 +1,562 @@
+[
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2022,
+    "number": 1,
+    "question": "컴퓨터 알고리즘의 조건에 대한 설명으로 옳지 않은 것은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2022/question_1.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 0,
+      "x1": 4.0,
+      "x2": 350.0,
+      "y1": 118.46624311900007,
+      "y2": 251.48746611900003
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2022,
+    "number": 2,
+    "question": "다음에서 설명하는 빅데이터의 3대 특징으로 옳지 않은 것은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2022/question_2.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 0,
+      "x1": 4.0,
+      "x2": 350.0,
+      "y1": 251.48746611900003,
+      "y2": 484.30459311899995
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2022,
+    "number": 3,
+    "question": "다음 자료를 오름차순으로 삽입 정렬(insertion sort)하는 과정에서 나올 수 없는 경우는?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2022/question_3.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 0,
+      "x1": 4.0,
+      "x2": 350.0,
+      "y1": 484.30459311899995,
+      "y2": 672.8612771190001
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2022,
+    "number": 4,
+    "question": "소프트웨어의 화이트박스 테스트에 대한 설명으로 옳지 않은 것은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2022/question_4.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 0,
+      "x1": 4.0,
+      "x2": 350.0,
+      "y1": 672.8612771190001,
+      "y2": 872.453085119
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2022,
+    "number": 5,
+    "question": "16진수 210을 8진수로 변환한 것은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2022/question_5.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 0,
+      "x1": 4.0,
+      "x2": 350.0,
+      "y1": 872.453085119,
+      "y2": 987.5351808
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2022,
+    "number": 6,
+    "question": "은행원 알고리즘(banker’s algorithm)이 교착상태를 해결하는 방법은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2022/question_6.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 0,
+      "x1": 358.0,
+      "x2": 704.0,
+      "y1": 50.45629411900006,
+      "y2": 188.63523811900006
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2022,
+    "number": 7,
+    "question": "다음 OSI 7계층 중 물리 계층에 해당하는 장치를 모두 고른 것은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2022/question_7.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 0,
+      "x1": 358.0,
+      "x2": 704.0,
+      "y1": 188.63523811900006,
+      "y2": 417.1342731190001
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2022,
+    "number": 8,
+    "question": "이미지 표현을 위한 RGB 방식과 CMYK 방식에 대한 설명으로 옳은 것은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2022/question_8.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 0,
+      "x1": 358.0,
+      "x2": 704.0,
+      "y1": 417.1342731190001,
+      "y2": 574.984525119
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2022,
+    "number": 9,
+    "question": "다음은 A계좌에서 B계좌로 3,500원을 이체하는 계좌 이체 트랜잭션 T 과, C계좌에서 D계좌로 5,200원을 이체하는 계좌 1 이체 트랜잭션 T 가 순차적으로 수행되면서 기록된 로그파일 2 내용이다. (가)의 시점에서 장애가 발생했을 경우 지연 갱신 회복 기법을 적용했을 때 트랜잭션에 대한 회복조치로 옳은 것은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2022/question_9.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 0,
+      "x1": 358.0,
+      "x2": 704.0,
+      "y1": 574.984525119,
+      "y2": 988.1759376739999
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2022,
+    "number": 10,
+    "question": "다음에 해당하는 CMMI(Capability Maturity Model Integration) 모델의 성숙 단계로 옳은 것은? (단, 하위 성숙 단계는 모두 만족한 것으로 가정한다)",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2022/question_10.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 1,
+      "x1": 4.0,
+      "x2": 350.0,
+      "y1": 50.45629411900006,
+      "y2": 372.03420111900004
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2022,
+    "number": 11,
+    "question": "다음은 정논리를 사용하는 JK 플립플롭의 진리표이다. (가)～(라)에 들어갈 내용으로 옳은 것은? (단, Q'은 Q의 반댓값을 의미한다)",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2022/question_11.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 1,
+      "x1": 4.0,
+      "x2": 350.0,
+      "y1": 372.03420111900004,
+      "y2": 662.305941119
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2022,
+    "number": 12,
+    "question": "다음 SQL(Structured Query Language)문으로 생성한 테이블에 내용을 삽입할 때 올바르게 동작하지 않는 SQL 문장은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2022/question_12.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 1,
+      "x1": 4.0,
+      "x2": 350.0,
+      "y1": 662.305941119,
+      "y2": 987.875350492
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2022,
+    "number": 13,
+    "question": "패킷 교환 네트워크에 대한 설명으로 옳지 않은 것은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2022/question_13.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 1,
+      "x1": 358.0,
+      "x2": 704.0,
+      "y1": 50.45629411900006,
+      "y2": 231.21642311900007
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2022,
+    "number": 14,
+    "question": "인터럽트에 대한 설명으로 옳지 않은 것은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2022/question_14.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 1,
+      "x1": 358.0,
+      "x2": 704.0,
+      "y1": 231.21642311900007,
+      "y2": 452.038850119
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2022,
+    "number": 15,
+    "question": "다음 C 프로그램을 실행하면서 사용자가 1, 2, 3, 4를 차례대로 입력했을 때, 출력 결과는?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2022/question_15.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 1,
+      "x1": 358.0,
+      "x2": 704.0,
+      "y1": 452.038850119,
+      "y2": 988.1349158
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2022,
+    "number": 16,
+    "question": "그림은 TCP Tahoe에서 데이터 전송에 따른 혼잡 윈도우(cwnd, 단위: MSS)의 크기 변화를 나타낸다. 혼잡 윈도우값이 18일 때의 전송에서 Time-out이 발생했을 때, 느린 출발(slow-start) 임곗값과 혼잡 윈도우값 변화로 옳은 것은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2022/question_16.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 2,
+      "x1": 4.0,
+      "x2": 350.0,
+      "y1": 50.45629411900006,
+      "y2": 513.091873119
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2022,
+    "number": 17,
+    "question": "다중 프로그래밍 환경에서 연속 메모리 할당 방법에 대한 설명으로 옳지 않은 것은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2022/question_17.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 2,
+      "x1": 4.0,
+      "x2": 350.0,
+      "y1": 513.091873119,
+      "y2": 759.5829581190001
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2022,
+    "number": 18,
+    "question": "병렬 프로세서에 대한 설명으로 옳지 않은 것은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2022/question_18.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 2,
+      "x1": 4.0,
+      "x2": 350.0,
+      "y1": 759.5829581190001,
+      "y2": 986.9686711190001
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2022,
+    "number": 19,
+    "question": "다음 C 프로그램의 실행 결과로 옳은 것은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2022/question_19.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 2,
+      "x1": 358.0,
+      "x2": 704.0,
+      "y1": 50.45629411900006,
+      "y2": 635.4378131189999
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2022,
+    "number": 20,
+    "question": "다음과 같이 P1, P2, P3, P4 프로세스가 동시에 준비 상태 큐에 도착했을 때 SJF(Shortest Job First) 스케줄링 알고리즘에서 평균 반환시간과 평균 대기시간을 바르게 연결한 것은? (단, 프로세스 간 문맥교환에 따른 오버헤드는 무시하며, 주어진 4개의 프로세스 외에 처리할 다른 프로세스는 없다고 가정한다)",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2022/question_20.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 2,
+      "x1": 358.0,
+      "x2": 704.0,
+      "y1": 635.4378131189999,
+      "y2": 989.4543328
+    }
+  }
+]
