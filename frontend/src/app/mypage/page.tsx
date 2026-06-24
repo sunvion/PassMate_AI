@@ -134,10 +134,10 @@ export default function MyPage() {
         onLoginClick={() => setIsLoginModalOpen(true)}
       />
 
-      <div className="flex pt-16">
+      <div className="flex">
         <Sidebar isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
 
-        <section className="mx-auto w-full max-w-[1500px] px-10 py-8">
+        <section className="mx-auto max-w-6xl px-8 pt-28 pb-10">
           <div className="mb-8">
             <p className="mb-3 text-sm font-medium text-slate-500">
               마이페이지 <span className="mx-2">›</span>
