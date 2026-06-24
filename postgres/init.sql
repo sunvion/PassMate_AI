@@ -50,5 +50,28 @@ CREATE TABLE IF NOT EXISTS problem_solving_history (
     submitted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP -- 제출 일시 (타임존 포함)
 );
 
+
+-- 5. 제출 회차별 독립 오답노트 관리를 위한 메인 테이블
+CREATE TABLE IF NOT EXISTS wrong_notebooks (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL,
+    exam_type VARCHAR(50) NOT NULL,
+    year INT NULL,
+    subject VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 6. 오답노트 내부에 귀속된 개별 문항 기록 테이블 (틀린문제 + 안푼문제)
+CREATE TABLE IF NOT EXISTS wrong_notebook_items (
+    id BIGSERIAL PRIMARY KEY,
+    notebook_id BIGINT NOT NULL REFERENCES wrong_notebooks(id) ON DELETE CASCADE,
+    question_id BIGINT NOT NULL REFERENCES questions(id) ON DELETE CASCADE,
+    selected_option JSONB NOT NULL,
+    is_correct BOOLEAN NOT NULL,
+    status VARCHAR(20) NOT NULL, -- 'wrong' (틀린 문제) 또는 'unsolved' (안 푼 문제)
+    submitted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 -- (필요하다면) pgvector를 활용할 임베딩 저장용 컬럼을 나중에 추가할 수도 있습니다.
 -- 예: ALTER TABLE questions ADD COLUMN embedding vector(1536);
