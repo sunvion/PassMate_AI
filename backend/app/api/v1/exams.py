@@ -9,6 +9,9 @@ from app.crud.question import crud_question
 from app.models.question import Question
 from app.schemas.question import QuestionResponse
 
+# 인증 및 권한 가드에 필요한 의존성 함수를 임포트합니다.
+from app.core.security import get_current_user
+
 router = APIRouter()
 
 @router.get("", summary="등록된 전체 기출지 메타 리스트 유니크 조회")

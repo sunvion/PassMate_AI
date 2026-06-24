@@ -12,7 +12,7 @@ from app.schemas.statistics import (
     ExamSessionDetailResponse,
     WrongNotebookListElement,       # 🆕 신규 목록 엘리먼트 DTO
     WrongNotebookDetailResponse,     # 🆕 신규 상세 응답 DTO
-    WrongNotebookUpdateTitleRequest  # 🆕 신규 제목 변경 바디 DTO
+    WrongNotebookUpdateTitleRequest,  # 🆕 신규 제목 변경 바디 DTO
     ChapterWrongCountResponse
 )
 
