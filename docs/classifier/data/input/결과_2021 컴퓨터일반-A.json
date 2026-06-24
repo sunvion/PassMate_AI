@@ -1,0 +1,562 @@
+[
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2021,
+    "number": 1,
+    "question": "가상화폐와 관련이 가장 적은 것은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2021/question_1.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 0,
+      "x1": 4.0,
+      "x2": 293.5,
+      "y1": 103.96782059999998,
+      "y2": 165.46061759999998
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2021,
+    "number": 2,
+    "question": "다음 설명에 해당하는 기술은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2021/question_2.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 0,
+      "x1": 4.0,
+      "x2": 293.5,
+      "y1": 165.46061759999998,
+      "y2": 297.91586259999997
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2021,
+    "number": 3,
+    "question": "일반적인 컴퓨터 시스템에서 정확한 값으로 표현하기 가장 어려운 것은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2021/question_3.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 0,
+      "x1": 4.0,
+      "x2": 293.5,
+      "y1": 297.91586259999997,
+      "y2": 389.37590960000006
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2021,
+    "number": 4,
+    "question": "노드(node)가 11개 있는 트리의 간선(edge) 개수는?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2021/question_4.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 0,
+      "x1": 4.0,
+      "x2": 293.5,
+      "y1": 389.37590960000006,
+      "y2": 450.86870660000005
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2021,
+    "number": 5,
+    "question": "CPU에서 명령어를 처리하는 단계 중 가장 첫 번째에 위치하는 것은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2021/question_5.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 0,
+      "x1": 4.0,
+      "x2": 293.5,
+      "y1": 450.86870660000005,
+      "y2": 558.3911995999999
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2021,
+    "number": 6,
+    "question": "캐시(cache)에 대한 설명으로 옳지 않은 것은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2021/question_6.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 0,
+      "x1": 4.0,
+      "x2": 293.5,
+      "y1": 558.3911995999999,
+      "y2": 696.7200256
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2021,
+    "number": 7,
+    "question": "가상 기계(virtual machine)에 대한 설명으로 옳지 않은 것은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2021/question_7.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 0,
+      "x1": 4.0,
+      "x2": 293.5,
+      "y1": 696.7200256,
+      "y2": 828.1916456
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2021,
+    "number": 8,
+    "question": "프로세스(process)에 대한 설명으로 옳지 않은 것은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2021/question_8.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 0,
+      "x1": 301.5,
+      "x2": 591.0,
+      "y1": 41.875678600000015,
+      "y2": 167.85799759999998
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2021,
+    "number": 9,
+    "question": "자바 프로그래밍 언어에 대한 설명으로 옳은 것은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2021/question_9.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 0,
+      "x1": 301.5,
+      "x2": 591.0,
+      "y1": 167.85799759999998,
+      "y2": 325.48573260000006
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2021,
+    "number": 10,
+    "question": "다음 C++ 프로그램의 실행 결과로 옳은 것은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2021/question_10.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 0,
+      "x1": 301.5,
+      "x2": 591.0,
+      "y1": 325.48573260000006,
+      "y2": 830.7088946
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2021,
+    "number": 11,
+    "question": "다음 C 프로그램의 실행 결과로 옳은 것은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2021/question_11.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 1,
+      "x1": 4.0,
+      "x2": 293.5,
+      "y1": 41.875678600000015,
+      "y2": 354.13442360000005
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2021,
+    "number": 12,
+    "question": "클래스기반주소지정에서IPv4 주소131.23.120.5가속하는클래스는?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2021/question_12.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 1,
+      "x1": 4.0,
+      "x2": 293.5,
+      "y1": 354.13442360000005,
+      "y2": 452.7866106
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2021,
+    "number": 13,
+    "question": "IPv4 CIDR 표기법에서 네트워크 접두사(prefix)의 길이가 25일 때, 이에 해당하는 서브넷 마스크(subnet mask)는?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2021/question_13.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 1,
+      "x1": 4.0,
+      "x2": 293.5,
+      "y1": 452.7866106,
+      "y2": 567.9807195999999
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2021,
+    "number": 14,
+    "question": "다음 설명에 해당하는 기술은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2021/question_14.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 1,
+      "x1": 4.0,
+      "x2": 293.5,
+      "y1": 567.9807195999999,
+      "y2": 723.5706816
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2021,
+    "number": 15,
+    "question": "노드7, 13, 61, 38, 45, 26, 14를차례대로삽입하여최대히프(heap)를 구성한 뒤 이 트리를 중위 순회 할 때, 첫 번째로 방문하는 노드는?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2021/question_15.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 1,
+      "x1": 4.0,
+      "x2": 293.5,
+      "y1": 723.5706816,
+      "y2": 829.6300736
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2021,
+    "number": 16,
+    "question": "다음 그림은 스마트폰 수리와 관련된 E－R 다이어그램의 일부이다. 이에 대한 설명으로 옳지 않은 것은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2021/question_16.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 1,
+      "x1": 301.5,
+      "x2": 591.0,
+      "y1": 41.875678600000015,
+      "y2": 243.25559859999998
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2021,
+    "number": 17,
+    "question": "UML(Unified Modeling Language) 버전 2.0에 대한 설명으로 옳지 않은 것은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2021/question_17.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 1,
+      "x1": 301.5,
+      "x2": 591.0,
+      "y1": 243.25559859999998,
+      "y2": 395.9687046
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2021,
+    "number": 18,
+    "question": "같은 값을 옳게 나열한 것은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2021/question_18.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 1,
+      "x1": 301.5,
+      "x2": 591.0,
+      "y1": 395.9687046,
+      "y2": 461.1774406
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2021,
+    "number": 19,
+    "question": "관계형 데이터베이스에 대한 설명으로 옳은 것만을 모두 고르면?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2021/question_19.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 1,
+      "x1": 301.5,
+      "x2": 591.0,
+      "y1": 461.1774406,
+      "y2": 668.1912036
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2021,
+    "number": 20,
+    "question": "IT 기술에 대한 설명으로 옳지 않은 것은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2021/question_20.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 1,
+      "x1": 301.5,
+      "x2": 591.0,
+      "y1": 668.1912036,
+      "y2": 829.3903356
+    }
+  }
+]

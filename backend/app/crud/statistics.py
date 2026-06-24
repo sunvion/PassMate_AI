@@ -190,25 +190,18 @@ class CRUDStatistics:
         ]
 
     async def get_wrong_notebook_detail(self, db: AsyncSession, user_id: int, notebook_id: int) -> Optional[Dict[str, Any]]:
-        """
-        2. 특정 오답노트 상세 조회 (GET /api/v1/wrong-notebooks/{wrong_notebook_id})
-        오답노트 마스터 유효성 검증 후, 귀속된 모든 문항(틀린 문제 + 안 푼 문제)의 원본과 오답 마킹 스냅샷을 반환합니다.
-        """
-        # 소유권 검증용 마스터 테이블 조회
         nb_query = text("SELECT id, title, exam_type, year, subject FROM wrong_notebooks WHERE id = :id AND user_id = :user_id")
         nb_res = await db.execute(nb_query, {"id": notebook_id, "user_id": user_id})
         nb_row = nb_res.first()
-        if not nb_row:
-            return None
+        if not nb_row: return None
 
-        # 연결된 문제 원본 및 오답 스냅샷 데이터 JOIN 조회
+        # 💡 [SQL 교정]: SELECT 절 맨 뒤에 q.image_url을 명시적으로 추가하여 JOIN 소싱 실행
         items_query = text("""
             SELECT wni.question_id, q.question, q.options, wni.selected_option, q.answer as correct_answer,
-                   wni.is_correct, wni.status, q.explanation, wni.submitted_at
+                   wni.is_correct, wni.status, q.explanation, wni.submitted_at, q.image_url
             FROM wrong_notebook_items wni
             JOIN questions q ON wni.question_id = q.id
-            WHERE wni.notebook_id = :notebook_id 
-            ORDER BY wni.id ASC
+            WHERE wni.notebook_id = :notebook_id ORDER BY wni.id ASC
         """)
         items_res = await db.execute(items_query, {"notebook_id": notebook_id})
         items_rows = items_res.all()
@@ -216,30 +209,20 @@ class CRUDStatistics:
         import json
         items_list = []
         for r in items_rows:
-            # 데이터베이스 적재 데이터 타입 호환성을 고려한 JSON 파싱 방어 코드
             opts = r.options if isinstance(r.options, dict) else json.loads(r.options) if r.options else {}
             sel_opt = r.selected_option if isinstance(r.selected_option, list) else json.loads(r.selected_option) if r.selected_option else []
             corr_ans = r.correct_answer if isinstance(r.correct_answer, list) else json.loads(r.correct_answer) if r.correct_answer else []
             
             items_list.append({
-                "question_id": r.question_id,
-                "question": r.question,
-                "options": opts,
-                "selected_option": sel_opt,
-                "correct_answer": corr_ans,
-                "is_correct": r.is_correct,
-                "status": r.status,
-                "explanation": r.explanation,
+                "question_id": r.question_id, "question": r.question, "options": opts,
+                "selected_option": sel_opt, "correct_answer": corr_ans, "is_correct": r.is_correct,
+                "status": r.status, "explanation": r.explanation, 
+                "image_url": r.image_url, # 💡 [딕셔너리 매핑 추가]: 파이썬 객체로 가공 바인딩
                 "submitted_at": r.submitted_at
             })
-
         return {
-            "id": nb_row.id,
-            "title": nb_row.title,
-            "exam_type": nb_row.exam_type,
-            "year": nb_row.year,
-            "subject": nb_row.subject,
-            "items": items_list
+            "id": nb_row.id, "title": nb_row.title, "exam_type": nb_row.exam_type, "year": nb_row.year,
+            "subject": nb_row.subject, "items": items_list
         }
 
     async def update_wrong_notebook_title(self, db: AsyncSession, user_id: int, notebook_id: int, title: str) -> bool:
@@ -264,3 +247,16 @@ class CRUDStatistics:
         return res.rowcount > 0
 
 crud_statistics = CRUDStatistics()
+
+
+async def get_wrong_count_by_chapter(self, db: AsyncSession, user_id: int) -> List[Dict[str, Any]]:
+        """유저의 풀이 로그 중 오답들만 필터링하여 챕터별로 카운트 집계"""
+        query = (
+            select(Question.chapter, func.count(func.distinct(Question.id)).label("wrong_count"))
+            .join(ProblemSolvingHistory, ProblemSolvingHistory.question_id == Question.id)
+            .where(ProblemSolvingHistory.user_id == user_id, ProblemSolvingHistory.is_correct == False)
+            .group_by(Question.chapter)
+            .order_by(text("wrong_count DESC"))
+        )
+        result = await db.execute(query)
+        return [{"chapter": row[0], "wrong_count": row[1]} for row in result.all()]

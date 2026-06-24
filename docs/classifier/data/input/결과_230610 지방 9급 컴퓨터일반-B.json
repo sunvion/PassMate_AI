@@ -1,0 +1,562 @@
+[
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2023,
+    "number": 1,
+    "question": "다음 중 문자 한 개를 표현하기 위해 필요한 비트 수가 가장 많은 문자 코드 체계는?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2023/question_1.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 0,
+      "x1": 4.0,
+      "x2": 360.0,
+      "y1": 101.6929672,
+      "y2": 286.3574471999999
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2023,
+    "number": 2,
+    "question": "다음은 어떤 시스템의 성능 개선에 대한 내용이다. 성능 개선 후 프로그램 P의 실행에 걸리는 소요시간은? (단, 시스템에서 프로그램 P만 실행된다고 가정한다)",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2023/question_2.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 0,
+      "x1": 4.0,
+      "x2": 360.0,
+      "y1": 286.3574471999999,
+      "y2": 666.9581352
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2023,
+    "number": 3,
+    "question": "부울 변수 , , 에 대한 등식으로 옳지 않은 것은? (단, ㆍ은 AND, ＋는 OR, ′는 NOT 연산을 의미한다)",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2023/question_3.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 0,
+      "x1": 4.0,
+      "x2": 360.0,
+      "y1": 666.9581352,
+      "y2": 851.6226152000002
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2023,
+    "number": 4,
+    "question": "IP(Internet Protocol)에 대한 설명으로 옳지 않은 것은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2023/question_4.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 0,
+      "x1": 4.0,
+      "x2": 360.0,
+      "y1": 851.6226152000002,
+      "y2": 1009.5170152000001
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2023,
+    "number": 5,
+    "question": "다음에서 제시한 시스템에서 주기억장치 주소의 각 필드의 비트 수를 바르게 연결한 것은? (단, 주기억장치 주소는 바이트 단위로 할당되고, 1KB는 1,024바이트이다)",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2023/question_5.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 0,
+      "x1": 368.0,
+      "x2": 724.0,
+      "y1": 49.17151119999994,
+      "y2": 449.43776719999994
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2023,
+    "number": 6,
+    "question": "2의 보수로 표현된 부호 있는(signed) 비트 2진 정수에 대한 설명으로 옳지 않은 것은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2023/question_6.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 0,
+      "x1": 368.0,
+      "x2": 724.0,
+      "y1": 449.43776719999994,
+      "y2": 655.4465832000001
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2023,
+    "number": 7,
+    "question": "10진수 45.1875를 2진수로 변환한 것은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2023/question_7.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 0,
+      "x1": 368.0,
+      "x2": 724.0,
+      "y1": 655.4465832000001,
+      "y2": 806.5357032
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2023,
+    "number": 8,
+    "question": "운영체제에서 다음 설명에 해당하는 페이지 교체 알고리즘은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2023/question_8.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 0,
+      "x1": 368.0,
+      "x2": 724.0,
+      "y1": 806.5357032,
+      "y2": 995.595232
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2023,
+    "number": 9,
+    "question": "ICT 기술에 대한 설명으로 옳지 않은 것은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2023/question_9.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 1,
+      "x1": 4.0,
+      "x2": 360.0,
+      "y1": 49.17151119999994,
+      "y2": 365.73919119999994
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2023,
+    "number": 10,
+    "question": "다음 조건을 만족하는 가상기억장치에서 가상 페이지 번호(virtual page number)와 페이지 오프셋의 비트 수를 바르게 연결한 것은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2023/question_10.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 1,
+      "x1": 4.0,
+      "x2": 360.0,
+      "y1": 365.73919119999994,
+      "y2": 667.1979592
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2023,
+    "number": 11,
+    "question": "다음 트리에 대한 설명으로 옳지 않은 것은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2023/question_11.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 1,
+      "x1": 4.0,
+      "x2": 360.0,
+      "y1": 667.1979592,
+      "y2": 984.0836800000001
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2023,
+    "number": 12,
+    "question": "다음에서 설명하는 UML(Unified Modeling Language) 다이어그램 (diagram)은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2023/question_12.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 1,
+      "x1": 368.0,
+      "x2": 724.0,
+      "y1": 49.17151119999994,
+      "y2": 324.24963919999993
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2023,
+    "number": 13,
+    "question": "리틀 엔디안(little endian) 방식을 사용하는 시스템에서 다음 C 프로그램의 출력 결과는? (단, int의 크기는 4바이트이다)",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2023/question_13.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 1,
+      "x1": 368.0,
+      "x2": 724.0,
+      "y1": 324.24963919999993,
+      "y2": 836.7535272
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2023,
+    "number": 14,
+    "question": "2의 보수로 표현된 부호 있는 8비트 2진 정수 10110101을 2비트만큼 산술 우측 시프트(arithmetic right shift)한 결과는?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2023/question_14.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 1,
+      "x1": 368.0,
+      "x2": 724.0,
+      "y1": 836.7535272,
+      "y2": 995.355408
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2023,
+    "number": 15,
+    "question": "다음 Java 프로그램의 출력 결과는?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2023/question_15.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 2,
+      "x1": 4.0,
+      "x2": 360.0,
+      "y1": 49.17151119999994,
+      "y2": 456.1528391999999
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2023,
+    "number": 16,
+    "question": "TCP/IP 프로토콜 계층 구조에서 다음 중 나머지 셋과 다른 계층에 속하는 프로토콜은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2023/question_16.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 2,
+      "x1": 4.0,
+      "x2": 360.0,
+      "y1": 456.1528391999999,
+      "y2": 640.8173191999999
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2023,
+    "number": 17,
+    "question": "데이터베이스 언어에 대한 설명으로 옳지 않은 것은?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2023/question_17.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 2,
+      "x1": 4.0,
+      "x2": 360.0,
+      "y1": 640.8173191999999,
+      "y2": 930.6149192
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2023,
+    "number": 18,
+    "question": "TCP(Transmission Control Protocol)에 대한 설명으로 옳은 것만을 모두 고르면?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2023/question_18.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 2,
+      "x1": 368.0,
+      "x2": 724.0,
+      "y1": 49.17151119999994,
+      "y2": 377.0109192
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2023,
+    "number": 19,
+    "question": "다음은 프로세스가 준비 상태 큐에 도착한 시간과 프로세스를 처리하는 데 필요한 실행 시간을 보여준다. 선점형 SJF(Shortest Job First) 스케줄링 알고리즘인 SRT(Shortest Remaining Time) 알고리즘을 사용할 경우, 프로세스들의 대기 시간 총합은? (단, 프로세스 간 문맥 교환에 따른 오버헤드는 무시하며, 주어진 4개 프로세스 외에 처리할 다른 프로세스는 없다고 가정한다)",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2023/question_19.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 2,
+      "x1": 368.0,
+      "x2": 724.0,
+      "y1": 377.0109192,
+      "y2": 786.7502231999999
+    }
+  },
+  {
+    "exam_type": "CS_LOCAL",
+    "subject": "컴퓨터일반",
+    "year": 2023,
+    "number": 20,
+    "question": "공백 상태인 이진 탐색 트리(binary search tree)에 1부터 5까지의 정수를 삽입하고자 한다. 삽입 결과, 이진 탐색 트리의 높이가 가장 높은 삽입 순서는?",
+    "body": "",
+    "options": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": ""
+    },
+    "answer": [],
+    "explanation": null,
+    "points": 5,
+    "category": "기출문제",
+    "question_type": "BOX_QUESTION",
+    "image_url": "/assets/images/exam_local_2023/question_20.png",
+    "video_url": null,
+    "image_crop_area": {
+      "page_index": 2,
+      "x1": 368.0,
+      "x2": 724.0,
+      "y1": 786.7502231999999,
+      "y2": 971.732744
+    }
+  }
+]
