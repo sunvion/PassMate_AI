@@ -9,8 +9,8 @@ import Sidebar from "@/components/Sidebar";
 
 type ExamMeta = {
   exam: string; // 큰 시험 분류
-  exam_type: string; // 국가직, 지방직, 필기 등 내부 코드
-  year: number;
+  exam_type: string; // 시험구분 내부 코드
+  year: number; // 시험 연도
   subject: string; // 실제 과목
   round?: string; // 회차가 있는 시험용
   is_mock?: boolean; // mock 데이터 여부
@@ -91,7 +91,7 @@ const normalizeExam = (
   return { ...exam, exam: "기타" };
 };
 
-// 시험구분 표시명
+// 시험구분 표시명 변환
 const getExamTypeLabel = (examType: string) => {
   switch (examType) {
     case "CS_GENERAL":
@@ -116,7 +116,7 @@ const getExamTypeLabel = (examType: string) => {
   }
 };
 
-// 과목 표시명
+// 과목 표시명 변환
 const getSubjectLabel = (subject: string) => {
   switch (subject) {
     case "운전면허 학과":
@@ -137,21 +137,28 @@ const sortByKorean = (a: string, b: string) =>
 export default function FullExamPage() {
   const router = useRouter();
 
+  // 사이드바 열림 상태
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
+  // 토글 조건 상태
   const [selectedExam, setSelectedExam] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("");
   const [selectedYear, setSelectedYear] = useState("전체");
   const [selectedExamType, setSelectedExamType] = useState("전체");
   const [selectedRound, setSelectedRound] = useState("전체");
 
-  const [exams, setExams] = useState<ExamMeta[]>([]);
-  const [searchedExams, setSearchedExams] = useState<ExamMeta[]>([]);
-  const [hasSearched, setHasSearched] = useState(false);
+  // 키워드 검색 상태
+  const [keyword, setKeyword] = useState("");
+  const [submittedKeyword, setSubmittedKeyword] = useState("");
 
+  // 시험 목록 상태
+  const [exams, setExams] = useState<ExamMeta[]>([]);
+
+  // 로딩/에러 상태
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
+  // 시험 목록 조회
   useEffect(() => {
     const fetchExams = async () => {
       try {
@@ -186,36 +193,37 @@ export default function FullExamPage() {
     fetchExams();
   }, []);
 
-  // 시험 옵션
+  // 시험 옵션 생성
   const examOptions = useMemo(() => {
     return Array.from(new Set(exams.map((exam) => exam.exam))).sort(
       sortByKorean
     );
   }, [exams]);
 
-  // 선택한 시험에 해당하는 데이터
+  // 선택한 시험에 맞는 데이터
   const availableExams = useMemo(() => {
+    if (!selectedExam) return exams;
     return exams.filter((exam) => exam.exam === selectedExam);
   }, [exams, selectedExam]);
 
-  // 과목 옵션
+  // 과목 옵션 생성
   const subjectOptions = useMemo(() => {
     return Array.from(
       new Set(availableExams.map((exam) => getSubjectLabel(exam.subject)))
     ).sort(sortByKorean);
   }, [availableExams]);
 
-  // 연도 옵션
+  // 연도 옵션 생성
   const yearOptions = useMemo(() => {
     return [
       "전체",
-      ...Array.from(new Set(availableExams.map((exam) => String(exam.year)))).sort(
-        (a, b) => Number(b) - Number(a)
-      ),
+      ...Array.from(
+        new Set(availableExams.map((exam) => String(exam.year)))
+      ).sort((a, b) => Number(b) - Number(a)),
     ];
   }, [availableExams]);
 
-  // 회차 옵션
+  // 회차 옵션 생성
   const roundOptions = useMemo(() => {
     return [
       "전체",
@@ -229,7 +237,7 @@ export default function FullExamPage() {
     ];
   }, [availableExams]);
 
-  // 국가직/지방직 옵션
+  // 시험구분 옵션 생성
   const examTypeOptions = useMemo(() => {
     const types = Array.from(
       new Set(availableExams.map((exam) => getExamTypeLabel(exam.exam_type)))
@@ -238,41 +246,34 @@ export default function FullExamPage() {
     return ["전체", ...types];
   }, [availableExams]);
 
+  // 선택 여부
   const isExamSelected = selectedExam !== "";
   const isSubjectSelected = selectedSubject !== "";
 
+  // 시험별 조건 제어
   const isDriverLicense = selectedExam === "운전면허 필기";
   const isEngineer = selectedExam === "정보처리기사";
-
   const hasExamType = selectedExam.includes("공무원");
   const hasRound = isEngineer;
 
-  // 시험 변경 시 하위 조건 초기화
-  const handleExamChange = (value: string) => {
-    setSelectedExam(value);
-    setSelectedSubject("");
-    setSelectedYear("전체");
-    setSelectedExamType("전체");
-    setSelectedRound("전체");
-    setHasSearched(false);
-    setSearchedExams([]);
-  };
+  // 사용자가 토글을 하나라도 선택했거나 검색을 실행했는지 확인
+  const hasAnyFilter =
+    selectedExam !== "" ||
+    selectedSubject !== "" ||
+    selectedYear !== "전체" ||
+    selectedExamType !== "전체" ||
+    selectedRound !== "전체" ||
+    submittedKeyword.trim() !== "";
 
-  // 과목 변경 시 하위 조건 초기화
-  const handleSubjectChange = (value: string) => {
-    setSelectedSubject(value);
-    setSelectedYear("전체");
-    setSelectedExamType("전체");
-    setSelectedRound("전체");
-    setHasSearched(false);
-    setSearchedExams([]);
-  };
+  // 토글 선택과 키워드 검색 결과를 자동 계산
+  const filteredExams = useMemo(() => {
+    const trimmedKeyword = submittedKeyword.trim().toLowerCase();
 
-  // 검색 실행
-  const handleSearch = () => {
-    const result = availableExams
+    return availableExams
       .filter((exam) => {
-        const subjectMatched = getSubjectLabel(exam.subject) === selectedSubject;
+        const subjectMatched =
+          !selectedSubject ||
+          getSubjectLabel(exam.subject) === selectedSubject;
 
         const yearMatched =
           isDriverLicense ||
@@ -285,34 +286,85 @@ export default function FullExamPage() {
           getExamTypeLabel(exam.exam_type) === selectedExamType;
 
         const roundMatched =
-          !hasRound || selectedRound === "전체" || exam.round === selectedRound;
+          !hasRound ||
+          selectedRound === "전체" ||
+          exam.round === selectedRound;
 
-        return subjectMatched && yearMatched && examTypeMatched && roundMatched;
+        const searchText = `${exam.exam} ${getSubjectLabel(exam.subject)} ${exam.year
+          } ${getExamTypeLabel(exam.exam_type)} ${exam.round ?? ""}`.toLowerCase();
+
+        const keywordMatched =
+          trimmedKeyword === "" || searchText.includes(trimmedKeyword);
+
+        return (
+          subjectMatched &&
+          yearMatched &&
+          examTypeMatched &&
+          roundMatched &&
+          keywordMatched
+        );
       })
       .sort((a, b) => {
         if (b.year !== a.year) return b.year - a.year;
-        return getExamTypeLabel(a.exam_type).localeCompare(
-          getExamTypeLabel(b.exam_type),
-          "ko-KR"
+
+        const subjectCompare = sortByKorean(
+          getSubjectLabel(a.subject),
+          getSubjectLabel(b.subject)
+        );
+
+        if (subjectCompare !== 0) return subjectCompare;
+
+        return sortByKorean(
+          getExamTypeLabel(a.exam_type),
+          getExamTypeLabel(b.exam_type)
         );
       });
+  }, [
+    availableExams,
+    selectedSubject,
+    selectedYear,
+    selectedExamType,
+    selectedRound,
+    submittedKeyword,
+    isDriverLicense,
+    hasExamType,
+    hasRound,
+  ]);
 
-    setSearchedExams(result);
-    setHasSearched(true);
+  // 시험 변경 시 하위 조건 초기화
+  const handleExamChange = (value: string) => {
+    setSelectedExam(value);
+    setSelectedSubject("");
+    setSelectedYear("전체");
+    setSelectedExamType("전체");
+    setSelectedRound("전체");
   };
 
-  // 검색 조건 초기화
+  // 과목 변경 시 하위 조건 초기화
+  const handleSubjectChange = (value: string) => {
+    setSelectedSubject(value);
+    setSelectedYear("전체");
+    setSelectedExamType("전체");
+    setSelectedRound("전체");
+  };
+
+  // 검색 버튼은 키워드 검색만 실행
+  const handleSearch = () => {
+    setSubmittedKeyword(keyword);
+  };
+
+  // 토글 조건과 키워드 전체 초기화
   const handleResetSearch = () => {
     setSelectedExam("");
     setSelectedSubject("");
     setSelectedYear("전체");
     setSelectedExamType("전체");
     setSelectedRound("전체");
-    setHasSearched(false);
-    setSearchedExams([]);
+    setKeyword("");
+    setSubmittedKeyword("");
   };
 
-  // 실제 문제 페이지 이동
+  // 실제 문제 풀이 페이지 이동
   const handleStartExam = (exam: ExamMeta) => {
     if (exam.is_mock) return;
 
@@ -342,7 +394,7 @@ export default function FullExamPage() {
 
           <h1 className="text-3xl font-bold">전체 회차 풀기</h1>
           <p className="mt-2 text-slate-500">
-            시험과 과목을 선택하고 조건에 맞는 회차를 검색하세요.
+            토글을 선택하면 회차 목록이 바로 반영되고, 검색창은 키워드 검색에 사용할 수 있습니다.
           </p>
         </div>
 
@@ -350,7 +402,8 @@ export default function FullExamPage() {
           <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <h2 className="text-xl font-bold">검색 조건</h2>
 
-            <div className="mt-6 grid gap-4 md:grid-cols-5">
+            {/* 1줄: 토글 조건 + 초기화 버튼 */}
+            <div className="mt-6 grid gap-4 md:grid-cols-[1fr_1fr_1fr_1fr_auto]">
               <SelectBox
                 label="시험"
                 value={selectedExam}
@@ -364,9 +417,7 @@ export default function FullExamPage() {
                 value={selectedSubject}
                 onChange={handleSubjectChange}
                 options={subjectOptions}
-                placeholder={
-                  isExamSelected ? "선택해주세요" : "시험을 먼저 선택해주세요"
-                }
+                placeholder={isExamSelected ? "선택해주세요" : "시험 먼저 선택"}
                 disabled={!isExamSelected}
               />
 
@@ -396,42 +447,46 @@ export default function FullExamPage() {
                 />
               )}
 
-              <div className="flex items-end gap-2">
-                <button
-                  type="button"
-                  onClick={handleSearch}
-                  disabled={!isSubjectSelected}
-                  className="h-12 flex-1 rounded-xl bg-blue-600 font-bold text-white shadow-md transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-200"
-                >
-                  검색
-                </button>
-
+              <div className="flex items-end">
                 <button
                   type="button"
                   onClick={handleResetSearch}
-                  className="h-12 rounded-xl border border-slate-200 bg-white px-4 font-semibold text-slate-600 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
+                  className="h-12 rounded-xl border border-slate-200 bg-white px-5 font-semibold text-slate-600 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
                 >
                   초기화
                 </button>
               </div>
             </div>
 
-            <p className="mt-3 text-sm text-slate-400">
-              공무원 시험은 국가직/지방직을 선택할 수 있고, 정보처리기사는 회차를 선택할 수 있습니다.
-            </p>
+            {/* 2줄: 키워드 검색창 + 검색 버튼 */}
+            <div className="mt-4 flex flex-col gap-3 md:flex-row">
+              <input
+                value={keyword}
+                onChange={(e) => setKeyword(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSearch();
+                }}
+                placeholder="시험명, 과목, 연도, 회차를 검색해보세요."
+                className="h-12 flex-1 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-50"
+              />
+
+              <button
+                type="button"
+                onClick={handleSearch}
+                className="h-12 rounded-xl bg-blue-600 px-8 font-bold text-white shadow-md transition hover:bg-blue-700"
+              >
+                검색
+              </button>
+            </div>
           </section>
 
           <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold">
-                {hasSearched ? "검색 결과" : "회차 목록"}
-              </h2>
+              <h2 className="text-xl font-bold">회차 목록</h2>
 
-              {hasSearched && (
-                <span className="text-sm text-slate-500">
-                  총 {searchedExams.length}개 회차
-                </span>
-              )}
+              <span className="text-sm text-slate-500">
+                총 {filteredExams.length}개 회차
+              </span>
             </div>
 
             <div className="mt-6 grid gap-4">
@@ -439,13 +494,13 @@ export default function FullExamPage() {
                 <EmptyBox title="시험 목록을 불러오는 중입니다..." />
               ) : errorMessage && exams.length === 0 ? (
                 <EmptyBox title={errorMessage} isError />
-              ) : !hasSearched ? (
+              ) : !hasAnyFilter ? (
                 <EmptyBox
-                  title="검색 조건을 선택해주세요."
-                  description="시험과 과목을 선택한 뒤 검색하면 조건에 맞는 회차만 표시됩니다."
+                  title="시험을 선택하거나 검색어를 입력해보세요."
+                  description="조건을 선택하면 회차 목록이 바로 표시됩니다."
                 />
-              ) : searchedExams.length > 0 ? (
-                searchedExams.map((exam) => (
+              ) : filteredExams.length > 0 ? (
+                filteredExams.map((exam) => (
                   <div
                     key={`${exam.year}-${exam.exam_type}-${exam.subject}-${exam.round ?? ""
                       }`}
@@ -497,8 +552,8 @@ export default function FullExamPage() {
                 ))
               ) : (
                 <EmptyBox
-                  title="검색 결과가 없습니다."
-                  description="다른 조건으로 다시 검색해보세요."
+                  title="표시할 회차가 없습니다."
+                  description="조건을 바꾸거나 검색어를 다시 입력해보세요."
                 />
               )}
             </div>
@@ -535,7 +590,7 @@ function SelectBox({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           disabled={disabled}
-          className="h-12 w-full appearance-none rounded-xl border border-slate-200 bg-white px-4 pr-10 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-50 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+          className="h-12 w-full appearance-none rounded-xl border border-slate-200 bg-white px-4 pr-10 text-[13px] font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-50 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
         >
           {placeholder && <option value="">{placeholder}</option>}
 
@@ -566,9 +621,7 @@ function EmptyBox({
 }) {
   return (
     <div
-      className={`rounded-2xl border border-dashed p-10 text-center ${isError
-          ? "border-red-300 bg-red-50"
-          : "border-slate-300 bg-slate-50"
+      className={`rounded-2xl border border-dashed p-10 text-center ${isError ? "border-red-300 bg-red-50" : "border-slate-300 bg-slate-50"
         }`}
     >
       <p className={`font-bold ${isError ? "text-red-600" : "text-slate-700"}`}>

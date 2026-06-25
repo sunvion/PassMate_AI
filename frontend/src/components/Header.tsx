@@ -73,14 +73,14 @@ export default function Header({ onMenuClick, onLoginClick }: HeaderProps) {
   const displayName = nickname || "사용자";
 
   return (
-    <header className="fixed left-0 top-0 z-50 flex h-16 w-full items-center justify-between border-b border-slate-200 bg-white/90 px-8 backdrop-blur">
+    <header className="fixed left-0 top-0 z-[999] flex h-16 w-full items-center justify-between border-b border-slate-200 bg-white px-8 text-slate-900 shadow-sm">
       <div className="flex items-center gap-4 md:gap-8">
         <button onClick={onMenuClick} className="text-2xl">
           ☰
         </button>
 
         <Link href="/">
-          <div className="flex items-center gap-3 font-bold text-xl">
+          <div className="flex items-center gap-3 text-xl font-extrabold text-slate-950">
             <Image
               src="/images/PM_icon.png"
               alt="PassMate AI 로고"
@@ -89,7 +89,9 @@ export default function Header({ onMenuClick, onLoginClick }: HeaderProps) {
               className="h-auto w-auto rounded-lg"
               priority
             />
-            <span className="hidden md:block">PassMate AI</span>
+            <span className="hidden md:block font-extrabold text-slate-950">
+              PassMate AI
+            </span>
           </div>
         </Link>
       </div>
@@ -113,7 +115,7 @@ export default function Header({ onMenuClick, onLoginClick }: HeaderProps) {
 
           {isUserMenuOpen && (
             <div className="absolute right-0 mt-3 w-60 rounded-2xl border border-slate-200 bg-white p-4 shadow-xl">
-              <p className="font-bold text-slate-900">{displayName}</p>
+              <div className="flex items-center gap-3 text-xl font-bold text-slate-900">{displayName}</div>
               <p className="mt-1 truncate text-sm text-slate-500">
                 Google 계정으로 로그인 중
               </p>
