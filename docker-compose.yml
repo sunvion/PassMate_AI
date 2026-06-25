@@ -31,6 +31,7 @@ services:
       - '8000:8000'
     volumes:
       - ./backend:/app
+      - ./docs:/app/docs
     # 🌟 [수정] 컴포즈 가동 시 app/main.py 패키지를 명확히 찌르도록 런타임 명령어 강제 주입
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     environment:

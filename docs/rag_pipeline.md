@@ -26,3 +26,41 @@ RAG/
 │
 │
 └─ .env
+
+=========
+
+백엔드 API 붙인 파이프라인
+
+C:\src\PassMate_AI\backend\
+│
+├── main.py
+│
+├── app/
+│   │
+│   ├── api/
+│   │   ├── api_router.py
+│   │   │
+│   │   └── v1/
+│   │       ├── rag.py
+│   │       └── wrong_note.py
+│   │
+│   ├── services/
+│   │   ├── rag/
+│   │   │    └── law_rag.py
+│   │   │
+│   │   ├── wrong_note_service.py
+│   │   ├── context_builder.py
+│   │   └── llm_service.py
+│   │
+│   ├── core/
+│   ├── db/
+│   ├── models/
+│   └── schemas/
+│
+└── docs/
+    └── data/
+        ├── processed/
+        │     └── road_traffic_law_clean.json
+        │
+        └── embeddings/
+              └── road_traffic_law_embedding_clean.json
