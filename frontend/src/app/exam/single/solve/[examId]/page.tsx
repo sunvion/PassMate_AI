@@ -1,3 +1,271 @@
+// 한 문제씩 풀기
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+
+import Header from "@/components/Header";
+import Sidebar from "@/components/Sidebar";
+import SolveHeader from "@/components/exams/SolveHeader";
+import QuestionCard from "@/components/exams/QuestionCard";
+import QuestionNavigator from "@/components/exams/QuestionNavigator";
+
+import { getExamQuestions, submitBulkAnswers } from "@/lib/examApi";
+import { Question, SelectedAnswers } from "@/types/exam";
+
 export default function SingleSolvePage() {
-  return <div>한 문제씩 풀이 페이지 준비 중</div>;
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const examType = searchParams.get("exam_type") || "";
+  const subject = searchParams.get("subject") || "";
+  const year = searchParams.get("year") || "";
+  const limit = searchParams.get("limit");
+
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [answers, setAnswers] = useState<SelectedAnswers>({});
+  const [checkedQuestions, setCheckedQuestions] = useState<Record<number, boolean>>({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const currentQuestion = questions[currentIndex];
+
+  const answeredCount = Object.keys(answers).length;
+  const progressPercent =
+    questions.length > 0 ? Math.round((answeredCount / questions.length) * 100) : 0;
+
+  const getExamTypeLabel = (examType: string) => {
+    switch (examType) {
+      case "CS_GENERAL":
+        return "국가직";
+      case "CS_LOCAL":
+        return "지방직";
+      case "DRIVERS_LICENSE_1":
+        return "운전면허 1종";
+      case "DRIVERS_LICENSE_2":
+        return "운전면허 2종";
+      default:
+        return examType;
+    }
+  };
+
+  const displayTitle = useMemo(() => {
+    if (year) {
+      return `${year} ${subject} ${getExamTypeLabel(examType)}`;
+    }
+
+    return `${subject} ${getExamTypeLabel(examType)}`;
+  }, [examType, subject, year]);
+
+  useEffect(() => {
+    const fetchQuestions = async () => {
+      try {
+        setIsLoading(true);
+        setErrorMessage("");
+
+        const data = await getExamQuestions({
+          examType,
+          subject,
+          year: year || undefined,
+          limit: limit ? Number(limit) : undefined,
+        });
+
+        const formattedQuestions = data.questions
+          .map((q: any) => ({
+            id: q.id,
+            number: q.number,
+            text: q.text ?? q.question ?? "",
+            imageUrl: q.imageUrl ?? q.image_url ?? null,
+            explanation: q.explanation ?? null,
+            answer: Array.isArray(q.answer)
+              ? q.answer.map(Number)
+              : [Number(q.answer)],
+            choices: Object.entries(q.options ?? {}).map(([number, text]) => ({
+              id: Number(number),
+              number: Number(number),
+              text: String(text),
+              imageUrl: null,
+            })),
+          }))
+          .sort((a: Question, b: Question) => a.number - b.number);
+
+        setQuestions(formattedQuestions);
+      } catch (error) {
+        console.error(error);
+        setErrorMessage("문제를 불러오지 못했습니다.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (!examType || !subject) {
+      setIsLoading(false);
+      setErrorMessage("시험 정보가 부족합니다.");
+      return;
+    }
+
+    fetchQuestions();
+  }, [examType, subject, year, limit]);
+
+  const handleSelectChoice = (questionId: number, choiceNumber: number) => {
+    if (checkedQuestions[questionId]) return;
+
+    setAnswers((prev) => ({
+      ...prev,
+      [questionId]: choiceNumber,
+    }));
+  };
+
+  const handleCheckAnswer = () => {
+    if (!currentQuestion) return;
+
+    if (answers[currentQuestion.id] === undefined) {
+      alert("먼저 답을 선택해주세요.");
+      return;
+    }
+
+    setCheckedQuestions((prev) => ({
+      ...prev,
+      [currentQuestion.id]: true,
+    }));
+  };
+
+  const handleMoveQuestion = (index: number) => {
+    setCurrentIndex(index);
+  };
+
+  const handlePrev = () => {
+    setCurrentIndex((prev) => Math.max(prev - 1, 0));
+  };
+
+  const handleNext = () => {
+    setCurrentIndex((prev) => Math.min(prev + 1, questions.length - 1));
+  };
+
+  const handleSubmitSolvedOnly = async () => {
+    if (Object.keys(answers).length === 0) {
+      alert("채점할 문제가 없습니다.");
+      return;
+    }
+
+    try {
+      await submitBulkAnswers(examType, answers, questions);
+      alert("채점이 완료되었습니다. 오답은 오답노트에 저장됩니다.");
+      router.push("/wrong-note");
+    } catch (error) {
+      console.error(error);
+      alert("채점 중 오류가 발생했습니다.");
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <main className="min-h-screen bg-slate-50 text-slate-900">
+        <Header onMenuClick={() => setIsMenuOpen(true)} onLoginClick={() => { }} />
+        <Sidebar isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
+        <div className="pt-28 text-center text-slate-500">
+          문제를 불러오는 중입니다...
+        </div>
+      </main>
+    );
+  }
+
+  if (errorMessage || questions.length === 0) {
+    return (
+      <main className="min-h-screen bg-slate-50 text-slate-900">
+        <Header onMenuClick={() => setIsMenuOpen(true)} onLoginClick={() => { }} />
+        <Sidebar isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
+        <div className="pt-28 text-center text-red-500">
+          {errorMessage || "문제가 없습니다."}
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <main className="min-h-screen bg-slate-50 text-slate-900">
+      <Header onMenuClick={() => setIsMenuOpen(true)} onLoginClick={() => { }} />
+      <Sidebar isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
+
+      <section className="pt-16">
+        <div className="min-h-screen bg-white">
+          <SolveHeader
+            title={displayTitle}
+            currentNumber={currentIndex + 1}
+            totalCount={questions.length}
+            answeredCount={answeredCount}
+            progressPercent={progressPercent}
+            onSubmit={handleSubmitSolvedOnly}
+          />
+
+          <div className="mx-auto grid w-full max-w-6xl grid-cols-[1fr_320px] gap-6 bg-slate-50 px-8 py-8">
+            <div className="space-y-6">
+              <QuestionCard
+                question={currentQuestion}
+                selectedChoice={answers[currentQuestion.id]}
+                examType={examType}
+                onSelectChoice={handleSelectChoice}
+                isChecked={checkedQuestions[currentQuestion.id]}
+                correctAnswer={currentQuestion.answer}
+              />
+
+              {checkedQuestions[currentQuestion.id] && (
+                <div className="rounded-2xl border border-blue-100 bg-blue-50 p-5">
+                  <h3 className="mb-2 text-sm font-extrabold text-blue-700">
+                    정답 확인
+                  </h3>
+
+                  <p className="text-sm font-semibold text-slate-700">
+                    정답: {currentQuestion.answer.join(", ")}번
+                  </p>
+
+                  {currentQuestion.explanation && (
+                    <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-slate-700">
+                      {currentQuestion.explanation}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={handlePrev}
+                  disabled={currentIndex === 0}
+                  className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+                >
+                  이전 문제
+                </button>
+
+                <button
+                  onClick={handleCheckAnswer}
+                  className="rounded-xl bg-blue-600 px-6 py-3 text-sm font-bold text-white hover:bg-blue-700"
+                >
+                  문제 정답 보기
+                </button>
+
+                <button
+                  onClick={handleNext}
+                  disabled={currentIndex === questions.length - 1}
+                  className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+                >
+                  다음 문제
+                </button>
+              </div>
+            </div>
+
+            <div className="sticky top-[184px] self-start">
+              <QuestionNavigator
+                questions={questions}
+                currentIndex={currentIndex}
+                answers={answers}
+                onMove={handleMoveQuestion}
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  );
 }

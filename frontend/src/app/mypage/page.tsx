@@ -1,131 +1,234 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 import Header from '../../components/Header'
 import Sidebar from '../../components/Sidebar'
 
 import {
-  BarChart3,
+  BookOpen,
+  CalendarDays,
   ChevronDown,
-  ClipboardList,
-  RotateCcw,
-  Sparkles,
-  Target,
+  NotebookPen,
+  Trophy,
+  TrendingUp,
 } from 'lucide-react'
 
-const subjects = [
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
+
+// 시험 선택 드롭다운용 타입
+type ExamOption = {
+  label: string
+  examType: string
+  subject: string
+  totalBankQuestions: number
+}
+
+// 회차 풀이 기록 타입
+type HistoryDetail = {
+  exam_type: string
+  year: number
+  subject: string
+  total_questions: number
+  correct_count: number
+  score: number
+  submitted_at: string
+}
+
+// 오답노트 목록 타입
+type WrongNotebookSummary = {
+  id: number
+  title: string
+  exam_type: string
+  year: number | null
+  subject: string
+  wrong_count: number
+  unsolved_count: number
+  total_count: number
+  created_at: string
+}
+
+// 대시보드에서 선택 가능한 시험 목록
+const examOptions: ExamOption[] = [
   {
-    name: '국가직 9급 컴퓨터일반',
-    areas: [
-      '컴퓨터구조',
-      '운영체제',
-      '데이터베이스',
-      '자료 구조',
-      '프로그래밍 언어론',
-      '소프트웨어 공학 및\n 시스템 설계',
-      '데이터 통신과\n 네트워크',
-      '인터넷 및\n 최신 기술 용어',
-    ],
+    label: '국가직 9급 컴퓨터일반',
+    examType: 'CS_GENERAL',
+    subject: '컴퓨터일반',
+    totalBankQuestions: 140,
   },
   {
-    name: '지방직 9급 컴퓨터일반',
-    areas: [
-      '컴퓨터구조',
-      '운영체제',
-      '데이터베이스',
-      '자료 구조',
-      '프로그래밍 언어론',
-      '소프트웨어 공학 및\n 시스템 설계',
-      '데이터 통신과\n 네트워크',
-      '인터넷 및 최신 기술 용어',
-    ],
+    label: '지방직 9급 컴퓨터일반',
+    examType: 'CS_LOCAL',
+    subject: '컴퓨터일반',
+    totalBankQuestions: 140,
   },
   {
-    name: '운전면허 필기시험',
-    areas: ['교통법규', '안전운전', '도로표지', '응급처치', '차량관리'],
+    label: '운전면허 필기',
+    examType: 'DRIVERS_LICENSE_1',
+    subject: '운전면허 필기',
+    totalBankQuestions: 500,
   },
 ]
 
+// 시험 타입 한글 변환
+function getExamTypeLabel(examType: string) {
+  switch (examType) {
+    case 'CS_GENERAL':
+      return '국가직'
+    case 'CS_LOCAL':
+      return '지방직'
+    case 'DRIVERS_LICENSE_1':
+    case 'DRIVERS_LICENSE_2':
+      return '운전면허 필기'
+    default:
+      return examType
+  }
+}
+
+// 날짜 문자열을 yyyy-mm-dd로 표시
+function getDateText(date?: string) {
+  if (!date) return '-'
+  return date.slice(0, 10)
+}
+
 export default function MyPage() {
+  const router = useRouter()
+
+  // UI 상태
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false)
-
-  const [selectedSubject, setSelectedSubject] = useState(0)
   const [isSubjectOpen, setIsSubjectOpen] = useState(false)
-  const [values, setValues] = useState<number[]>([])
-  const [displayValues, setDisplayValues] = useState<number[]>([])
-  const [expectedScore, setExpectedScore] = useState(72)
+  const [selectedExamIndex, setSelectedExamIndex] = useState(0)
 
-  const current = subjects[selectedSubject]
-  const hasStudyData = false // 원격 dev 브랜치에서 추가된 플래그 수용
+  // API 데이터 상태
+  const [histories, setHistories] = useState<HistoryDetail[]>([])
+  const [wrongNotes, setWrongNotes] = useState<WrongNotebookSummary[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  useEffect(() => {
-    const makeRandomValues = () => {
-      const nextValues = current.areas.map(
-        () => Math.floor(Math.random() * 35) + 45,
-      )
-
-      setValues(nextValues)
-      setExpectedScore(Math.floor(Math.random() * 20) + 65)
-    }
-
-    makeRandomValues()
-
-    const timer = setInterval(makeRandomValues, 1800)
-
-    return () => clearInterval(timer)
-  }, [selectedSubject, current.areas])
+  const selectedExam = examOptions[selectedExamIndex]
 
   useEffect(() => {
-    if (values.length === 0) return
+    const fetchDashboardData = async () => {
+      try {
+        setIsLoading(true)
 
-    if (displayValues.length !== values.length) {
-      setDisplayValues(values)
-      return
-    }
+        const token =
+          typeof window !== 'undefined' ? localStorage.getItem('token') : null
 
-    const startValues = [...displayValues]
-    const endValues = [...values]
-    const duration = 700
-    const startTime = performance.now()
+        const headers = {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        }
 
-    const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3)
+        // 성적 기록과 오답노트는 별도 API에서 조회
+        const [historyRes, wrongNoteRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/api/v1/statistics/history-details`, {
+            method: 'GET',
+            headers,
+            cache: 'no-store',
+          }),
+          fetch(`${API_BASE_URL}/api/v1/wrong-notebooks`, {
+            method: 'GET',
+            headers,
+            cache: 'no-store',
+          }),
+        ])
 
-    const animate = (now: number) => {
-      const progress = Math.min((now - startTime) / duration, 1)
-      const eased = easeOutCubic(progress)
+        if (historyRes.ok) {
+          const historyData = await historyRes.json()
+          setHistories(Array.isArray(historyData) ? historyData : [])
+        } else {
+          setHistories([])
+        }
 
-      const next = startValues.map((start, index) => {
-        return start + (endValues[index] - start) * eased
-      })
-
-      setDisplayValues(next)
-
-      if (progress < 1) {
-        requestAnimationFrame(animate)
+        if (wrongNoteRes.ok) {
+          const wrongNoteData = await wrongNoteRes.json()
+          setWrongNotes(Array.isArray(wrongNoteData) ? wrongNoteData : [])
+        } else {
+          setWrongNotes([])
+        }
+      } catch (error) {
+        console.warn('학습 통계 데이터 조회 실패:', error)
+        setHistories([])
+        setWrongNotes([])
+      } finally {
+        setIsLoading(false)
       }
     }
 
-    requestAnimationFrame(animate)
-  }, [values])
+    fetchDashboardData()
+  }, [])
 
-  const polygonPoints = displayValues
-    .map((value, index) => {
-      const angle = (Math.PI * 2 * index) / displayValues.length - Math.PI / 2
-      const radius = value * 1.15
-      const x = 150 + Math.cos(angle) * radius
-      const y = 150 + Math.sin(angle) * radius
-      return `${x},${y}`
-    })
-    .join(' ')
+  // 선택한 시험의 풀이 기록을 최신 응시일 순으로 정렬
+  const filteredHistories = useMemo(() => {
+    return histories
+      .filter(
+        (history) =>
+          history.exam_type === selectedExam.examType &&
+          history.subject === selectedExam.subject,
+      )
+      .sort((a, b) => {
+        const timeA = new Date(a.submitted_at).getTime()
+        const timeB = new Date(b.submitted_at).getTime()
+        return timeB - timeA
+      })
+  }, [histories, selectedExam])
 
-  const averageRate =
-    values.length > 0
-      ? Math.round(
-          values.reduce((sum, value) => sum + value, 0) / values.length,
-        )
-      : 0
+  // 선택한 시험에 해당하는 오답노트만 필터링
+  const filteredWrongNotes = useMemo(() => {
+    return wrongNotes
+      .filter(
+        (note) =>
+          note.exam_type === selectedExam.examType &&
+          note.subject === selectedExam.subject,
+      )
+      .sort((a, b) => b.created_at.localeCompare(a.created_at))
+  }, [wrongNotes, selectedExam])
+
+  const latestHistory = filteredHistories[0]
+  const latestWrongNote = filteredWrongNotes[0]
+
+  const hasStudyData = !!latestHistory
+
+  // 최근 응시 결과 계산
+  const totalQuestions = latestHistory?.total_questions ?? 20
+  const correctCount = latestHistory?.correct_count ?? 0
+  const score = latestHistory?.score ?? 0
+  const incorrectCount = Math.max(totalQuestions - correctCount, 0)
+
+  const recentHistories = filteredHistories.slice(0, 5)
+
+  // 최근 5회 점수 그래프 데이터
+  // filteredHistories가 이미 최신순이라 reverse 하면 안 됨
+  const scoreTrend = recentHistories.map((history, index) => ({
+    id: `${history.exam_type}-${history.year}-${history.submitted_at}-${index}`,
+    label: `${history.year} ${getExamTypeLabel(history.exam_type)}`,
+    date: getDateText(history.submitted_at),
+    score: history.score,
+  }))
+
+  // 오답노트 집계
+  const totalWrong = filteredWrongNotes.reduce(
+    (sum, note) => sum + note.wrong_count,
+    0,
+  )
+
+  const totalUnsolved = filteredWrongNotes.reduce(
+    (sum, note) => sum + note.unsolved_count,
+    0,
+  )
+
+  const totalReviewCount = filteredWrongNotes.reduce(
+    (sum, note) => sum + note.total_count,
+    0,
+  )
+
+  // 한 문제씩 학습 페이지로 이동
+  const handleStartSingleStudy = () => {
+    router.push('/exam/single')
+  }
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
@@ -137,281 +240,321 @@ export default function MyPage() {
       <div className="flex">
         <Sidebar isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
 
-        <section className="mx-auto max-w-6xl px-8 pt-28 pb-10">
-          <div className="mb-8">
-            <p className="mb-3 text-sm font-medium text-slate-500">
-              마이페이지 <span className="mx-2">›</span>
-              <span className="text-slate-900">학습 통계</span>
-            </p>
+        <section className="mx-auto w-full max-w-6xl px-8 pt-28 pb-10">
+          <div className="mb-8 flex items-start justify-between gap-6">
+            <div>
+              <p className="mb-3 text-sm font-medium text-slate-500">
+                마이페이지 <span className="mx-2">›</span>
+                <span className="text-slate-900">학습 통계</span>
+              </p>
 
-            <h1 className="text-3xl font-bold">기출문제 학습 통계</h1>
+              <h1 className="text-3xl font-black">학습 통계</h1>
 
-            <p className="mt-2 text-slate-500">
-              {hasStudyData
-                ? '나의 기출문제 풀이 기록을 바탕으로 학습 통계를 확인할 수 있어요.'
-                : '아직 학습 데이터가 없어요. 문제를 풀면 나만의 학습 통계가 생성됩니다.'}
-            </p>
-          </div>
+              <p className="mt-3 text-slate-500">
+                {isLoading
+                  ? '학습 데이터를 불러오는 중이에요.'
+                  : hasStudyData
+                    ? '최근 학습 데이터를 기반으로 분석한 결과입니다.'
+                    : '아직 학습 데이터가 없어요. 문제를 풀면 학습 통계가 채워집니다.'}
+              </p>
+            </div>
 
-          <div className="relative mb-6">
-            <button
-              onClick={() => setIsSubjectOpen(!isSubjectOpen)}
-              className="group flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-6 py-5 text-left shadow-sm transition-all duration-300 hover:border-blue-200 hover:shadow-md"
-            >
-              <div>
-                <p className="text-xs font-medium text-slate-400">
-                  선택된 시험
-                </p>
-                <p className="text-lg font-bold text-slate-800">
-                  {current.name}
-                </p>
-              </div>
+            <div className="relative w-[340px]">
+              <p className="mb-2 text-sm font-semibold text-slate-500">
+                시험 선택
+              </p>
 
-              <div
-                className={`flex h-10 w-10 items-center justify-center rounded-full transition-all duration-300
-      ${
-        isSubjectOpen
-          ? 'rotate-180 bg-blue-100 text-blue-600 shadow-sm'
-          : 'bg-slate-100 text-slate-500 group-hover:bg-blue-50 group-hover:text-blue-500'
-      }`}
+              <button
+                onClick={() => setIsSubjectOpen(!isSubjectOpen)}
+                className="flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-5 py-4 text-left shadow-sm transition hover:border-blue-200 hover:shadow-md"
               >
-                <ChevronDown size={20} strokeWidth={2.5} />
-              </div>
-            </button>
+                <span className="font-bold">{selectedExam.label}</span>
+                <ChevronDown
+                  size={20}
+                  className={`text-slate-500 transition ${isSubjectOpen ? 'rotate-180' : ''
+                    }`}
+                />
+              </button>
 
-            {isSubjectOpen && (
-              <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg">
-                {subjects.map((subject, index) => {
-                  const isSelected = selectedSubject === index
-
-                  return (
+              {isSubjectOpen && (
+                <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg">
+                  {examOptions.map((exam, index) => (
                     <button
-                      key={subject.name}
+                      key={exam.label}
                       onClick={() => {
-                        setSelectedSubject(index)
+                        setSelectedExamIndex(index)
                         setIsSubjectOpen(false)
                       }}
-                      className={`w-full px-6 py-4 text-left font-semibold transition
-              ${
-                isSelected
-                  ? 'bg-blue-50 text-blue-600'
-                  : 'text-slate-700 hover:bg-slate-50'
-              }
-            `}
+                      className={`w-full px-5 py-4 text-left font-bold transition ${selectedExamIndex === index
+                        ? 'bg-blue-50 text-blue-600'
+                        : 'hover:bg-slate-50'
+                        }`}
                     >
-                      {subject.name}
+                      {exam.label}
                     </button>
-                  )
-                })}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-6">
-            <article className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-              <div className="mb-6 flex items-center justify-between">
-                <h2 className="text-2xl font-bold">
-                  {current.areas.length}개 단원별 정답률
-                </h2>
-
-                {!hasStudyData && (
-                  <span className="rounded-full bg-blue-50 px-3 py-1 text-sm font-semibold text-blue-600">
-                    예시 화면
-                  </span>
-                )}
+            <article className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm">
+              <div className="mb-6 flex items-center gap-3">
+                <BookOpen className="text-blue-600" />
+                <h2 className="text-xl font-black">한 문제씩 학습</h2>
               </div>
 
-              <div className="flex justify-center">
-                <svg width="520" height="450" viewBox="-30 -30 360 360">
-                  {[40, 75, 105].map((r) => (
-                    <circle
-                      key={r}
-                      cx="150"
-                      cy="150"
-                      r={r}
-                      fill="none"
-                      stroke="#dbe4f0"
-                    />
-                  ))}
+              <div className="flex items-center gap-8">
+                <div className="flex h-40 w-40 items-center justify-center rounded-full bg-blue-50">
+                  <BookOpen className="text-blue-600" size={58} />
+                </div>
 
-                  {current.areas.map((area, index) => {
-                    const angle =
-                      (Math.PI * 2 * index) / current.areas.length - Math.PI / 2
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-slate-500">
+                    {selectedExam.label} 전체 문제 기준
+                  </p>
 
-                    const lineX = 150 + Math.cos(angle) * 105
-                    const lineY = 150 + Math.sin(angle) * 105
+                  <p className="mt-2 text-4xl font-black">
+                    {selectedExam.totalBankQuestions}
+                    <span className="ml-2 text-xl text-slate-500">문제</span>
+                  </p>
 
-                    const isTopOrBottom =
-                      index === 0 || index === current.areas.length / 2
-                    const labelRadius = isTopOrBottom ? 140 : 145
-
-                    const textX = 150 + Math.cos(angle) * labelRadius
-                    const textY = 150 + Math.sin(angle) * labelRadius
-
-                    return (
-                      <g key={area}>
-                        <line
-                          x1="150"
-                          y1="150"
-                          x2={lineX}
-                          y2={lineY}
-                          stroke="#dbe4f0"
-                        />
-
-                        <text
-                          x={textX}
-                          y={textY}
-                          textAnchor="middle"
-                          className="fill-slate-700 text-[11px] font-bold"
-                        >
-                          {area.split('\n').map((line, i) => (
-                            <tspan key={i} x={textX} dy={i === 0 ? 0 : 12}>
-                              {line}
-                            </tspan>
-                          ))}
-                        </text>
-                      </g>
-                    )
-                  })}
-
-                  <polygon
-                    points={polygonPoints}
-                    fill="rgba(37, 99, 235, 0.18)"
-                    stroke="#2563eb"
-                    strokeWidth="2"
-                  />
-
-                  {displayValues.map((value, index) => {
-                    const angle =
-                      (Math.PI * 2 * index) / displayValues.length - Math.PI / 2
-
-                    const radius = value * 1.15
-
-                    const x = 150 + Math.cos(angle) * radius
-                    const y = 150 + Math.sin(angle) * radius
-
-                    return (
-                      <circle key={index} cx={x} cy={y} r="4" fill="#2563eb" />
-                    )
-                  })}
-                </svg>
+                  <p className="mt-5 text-sm font-bold leading-relaxed text-slate-500">
+                    선택한 시험의 전체 문제를 한 문제씩 랜덤으로 학습할 수
+                    있어요.
+                    <br />
+                    과목이나 단원 선택 없이 바로 시작합니다.
+                  </p>
+                </div>
               </div>
 
-              <div className="mt-4 rounded-2xl bg-blue-50 p-5 text-center">
-                <p className="font-bold text-blue-600">
-                  {hasStudyData ? (
-                    <>
-                      단원별 학습 상태를 <br /> 한눈에 확인할 수 있어요.
-                    </>
-                  ) : (
-                    <>
-                      문제를 풀면 실제 데이터로 <br /> 학습 통계가 채워집니다.
-                    </>
-                  )}
-                </p>
+              <div className="mt-6 flex items-center justify-between rounded-2xl bg-blue-50 px-5 py-4">
+                <div>
+                  <p className="text-sm font-semibold text-slate-500">
+                    한 문제씩 학습
+                  </p>
+                  <p className="font-bold">전체 문제에서 랜덤으로 시작하기</p>
+                </div>
 
-                <p className="mt-1 text-sm text-slate-600">
-                  단원별 정답률, 약점 단원, 복습 우선순위
-                  <br />를 확인할 수 있어요.
-                </p>
+                <button
+                  onClick={handleStartSingleStudy}
+                  className="rounded-xl bg-blue-600 px-6 py-3 font-bold text-white transition hover:bg-blue-700"
+                >
+                  학습하기 →
+                </button>
               </div>
             </article>
 
-            <article className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-              <h2 className="mb-6 text-2xl font-bold">최근 응시 기출문제</h2>
-
-              <div className="rounded-3xl border border-blue-100 bg-blue-50 p-8 text-center">
-                <Sparkles className="mx-auto mb-4 text-blue-600" size={42} />
-
-                <p className="text-lg font-semibold text-slate-700">
-                  {hasStudyData
-                    ? '최근 응시한 기출문제예요'
-                    : '아직 응시한 기출문제가 없어요'}
-                </p>
-
-                <p className="mt-2 text-slate-500">
-                  {hasStudyData ? (
-                    <>
-                      최근 풀이 기록과 예상 점수를 <br /> 확인할 수 있어요.
-                    </>
-                  ) : (
-                    <>
-                      첫 문제를 풀면 최근 응시 기록과 <br /> 예상 점수가
-                      표시됩니다.
-                    </>
-                  )}
-                </p>
-
-                <div className="mt-6 text-6xl font-black text-blue-600">
-                  {expectedScore}
-                  <span className="text-2xl">점</span>
-                </div>
-
-                <p className="mt-2 text-sm text-slate-500">
-                  {hasStudyData ? '예상 점수' : '예시 예상 점수'}
-                </p>
+            <article className="rounded-3xl border border-emerald-100 bg-white p-7 shadow-sm">
+              <div className="mb-6 flex items-center gap-3">
+                <Trophy className="text-emerald-600" />
+                <h2 className="text-xl font-black">최근 응시 결과</h2>
               </div>
 
-              <div className="mt-6 grid grid-cols-2 gap-4">
-                <div className="rounded-2xl border border-slate-200 p-5 text-center">
-                  <article>
-                    <Target className="mx-auto mb-2 text-blue-600" />
-                    <p className="text-sm text-slate-500">예상 정답률</p>
-                    <p className="text-2xl font-bold">{averageRate}%</p>
-                  </article>
+              <div className="flex items-center gap-8">
+                <div className="relative flex h-40 w-40 items-center justify-center rounded-full bg-emerald-50">
+                  <div
+                    className="absolute inset-0 rounded-full"
+                    style={{
+                      background: `conic-gradient(#10b981 ${score}%, #e8f8f1 0)`,
+                    }}
+                  />
+                  <div className="relative flex h-32 w-32 items-center justify-center rounded-full bg-white">
+                    <span className="text-4xl font-black">
+                      {score}
+                      <span className="text-xl">점</span>
+                    </span>
+                  </div>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200 p-5 text-center">
-                  <article>
-                    <RotateCcw className="mx-auto mb-2 text-blue-600" />
-                    <p className="text-sm text-slate-500">복습 필요 단원</p>
-                    <p className="text-2xl font-bold">0개</p>
-                  </article>
+                <div className="flex-1">
+                  <p className="text-xl font-black">
+                    {hasStudyData
+                      ? `${latestHistory.year} ${getExamTypeLabel(
+                        latestHistory.exam_type,
+                      )} 9급 ${latestHistory.subject}`
+                      : '최근 응시 기록이 없어요'}
+                  </p>
+
+                  <p className="mt-4 text-3xl font-black">
+                    {correctCount}
+                    <span className="ml-1 text-lg text-slate-500">
+                      / {totalQuestions} 문제
+                    </span>
+                  </p>
+
+                  <div className="mt-5 flex gap-5 text-sm font-bold">
+                    <span className="text-emerald-600">
+                      맞은 문제 {correctCount}
+                    </span>
+                    <span className="text-slate-300">|</span>
+                    <span className="text-red-500">
+                      틀림/미풀이 {incorrectCount}
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              <button className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 py-4 font-bold text-white transition hover:bg-blue-700">
-                <ClipboardList size={20} />
-                기출문제 풀러가기
-              </button>
+              <div className="mt-6 flex items-center justify-between rounded-2xl bg-emerald-50 px-5 py-4">
+                <div className="flex items-center gap-3">
+                  <CalendarDays className="text-emerald-600" />
+                  <div>
+                    <p className="text-sm font-semibold text-slate-500">
+                      응시일
+                    </p>
+                    <p className="font-bold">
+                      {hasStudyData
+                        ? getDateText(latestHistory.submitted_at)
+                        : '아직 없음'}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => router.push('/wrong-note')}
+                  className="rounded-xl bg-emerald-600 px-6 py-3 font-bold text-white transition hover:bg-emerald-700"
+                >
+                  오답 보기 →
+                </button>
+              </div>
             </article>
           </div>
 
-          <article className="mt-6 rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-            <h2 className="mb-6 text-2xl font-bold">학습 요약</h2>
+          <div className="mt-6 grid grid-cols-2 gap-6">
+            <article className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm">
+              <div className="mb-6 flex items-center gap-3">
+                <TrendingUp className="text-blue-600" />
+                <h2 className="text-xl font-black">최근 5회 점수 변화</h2>
+              </div>
 
-            <div className="grid grid-cols-3 gap-6">
-              <div className="flex items-center gap-4 rounded-2xl bg-slate-50 p-6">
-                <BarChart3 className="text-blue-600" size={36} />
-                <div>
-                  <p className="text-slate-500">총 풀이 문제 수</p>
-                  <p className="text-3xl font-bold">
-                    {hasStudyData ? '128 문제' : '0 문제'}
+              {hasStudyData ? (
+                <div className="space-y-4">
+                  {scoreTrend.map((item) => (
+                    <div key={item.id}>
+                      <div className="mb-2 flex items-center justify-between text-sm font-bold">
+                        <span>{item.label}</span>
+                        <span
+                          className={
+                            item.score >= 70 ? 'text-blue-600' : 'text-red-500'
+                          }
+                        >
+                          {item.score}점
+                        </span>
+                      </div>
+
+                      <div className="h-4 rounded-full bg-slate-100">
+                        <div
+                          className={`h-4 rounded-full ${item.score >= 70 ? 'bg-blue-600' : 'bg-red-400'
+                            }`}
+                          style={{ width: `${item.score}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex h-64 items-center justify-center rounded-2xl bg-slate-50 text-center">
+                  <div>
+                    <p className="text-lg font-black">
+                      점수 변화 데이터가 없어요
+                    </p>
+                    <p className="mt-2 text-sm text-slate-500">
+                      시험을 풀면 최근 5회 점수 추이가 표시됩니다.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </article>
+
+            <article className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm">
+              <div className="mb-6 flex items-center gap-3">
+                <NotebookPen className="text-violet-600" />
+                <h2 className="text-xl font-black">오답노트 현황</h2>
+              </div>
+
+              {/* 오답노트 요약 */}
+              <div className="rounded-2xl bg-violet-50 p-6">
+                <div className="flex items-center gap-5">
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white text-violet-600">
+                    <NotebookPen size={34} />
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-slate-500">복습 대상 문제</p>
+
+                    <p className="mt-1 text-4xl font-black">
+                      {totalReviewCount}
+                      <span className="ml-1 text-xl">개</span>
+                    </p>
+
+                    <div className="mt-3 flex gap-3 text-sm font-bold">
+                      <span className="text-red-500">오답 {totalWrong}</span>
+                      <span className="text-slate-300">|</span>
+                      <span className="text-orange-500">미풀이 {totalUnsolved}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-5 rounded-xl bg-white/70 px-4 py-3">
+                  <p className="text-sm font-semibold text-slate-500">최근 오답노트</p>
+                  <p className="mt-1 truncate font-black">
+                    {latestWrongNote ? latestWrongNote.title : '아직 없음'}
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-4 rounded-2xl bg-slate-50 p-6">
-                <Target className="text-blue-600" size={36} />
-                <div>
-                  <p className="text-slate-500">평균 정답률</p>
-                  <p className="text-3xl font-bold">
-                    {hasStudyData ? `${averageRate}%` : '- %'}
-                  </p>
-                </div>
+              {/* 최근 추가된 오답노트 리스트 */}
+              <div className="mt-5 rounded-2xl border border-slate-200 p-6">
+                <p className="mb-4 font-black">최근 추가된 오답노트</p>
+
+                {filteredWrongNotes.length > 0 ? (
+                  <div className="space-y-3">
+                    {filteredWrongNotes.slice(0, 2).map((note) => (
+                      <div
+                        key={note.id}
+                        className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-4 py-3 text-sm"
+                      >
+                        <span className="shrink-0 text-slate-500">
+                          {getDateText(note.created_at)}
+                        </span>
+
+                        <span className="min-w-0 flex-1 truncate font-bold">
+                          {note.title}
+                        </span>
+
+                        <span className="shrink-0 font-black text-red-500">
+                          {note.total_count}문제
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex h-36 items-center justify-center text-center text-sm text-slate-500">
+                    틀린 문제나 미풀이 문제가 있으면
+                    <br />
+                    오답노트가 자동 생성됩니다.
+                  </div>
+                )}
               </div>
 
-              <div className="flex items-center gap-4 rounded-2xl bg-slate-50 p-6">
-                <ClipboardList className="text-blue-600" size={36} />
-                <div>
-                  <p className="text-slate-500">최근 응시 기록</p>
-                  <p className="text-3xl font-bold">
-                    {hasStudyData ? '있음' : '없음'}
-                  </p>
-                </div>
+              <div className="mt-6 grid grid-cols-2 gap-4">
+                <button
+                  onClick={() => router.push('/wrong-note')}
+                  className="rounded-2xl border border-violet-300 py-4 font-black text-violet-600 transition hover:bg-violet-50"
+                >
+                  오답노트 바로가기 →
+                </button>
+
+                <button
+                  onClick={() => router.push('/wrong-note')}
+                  className="rounded-2xl border border-violet-300 py-4 font-black text-violet-600 transition hover:bg-violet-50"
+                >
+                  전체 오답노트 보기 →
+                </button>
               </div>
-            </div>
-          </article>
+            </article>
+          </div>
         </section>
       </div>
     </main>
