@@ -1,8 +1,7 @@
 # backend/app/api/api_router.py
 from fastapi import APIRouter
 # 💡 ai 패키지 임포트 추가
-from app.api.v1 import auth, users, exams, attempts, statistics, ai, recommendations, rag, wrong_note  
-
+from app.api.v1 import auth, users, exams, attempts, statistics, ai  
 
 api_router = APIRouter()
 
@@ -26,13 +25,3 @@ api_router.include_router(
 
 # 🚀 🆕 3. AI 추천 및 분석 전용 도메인 라우터 등록 (프론트엔드 API 주소 바인딩)
 api_router.include_router(ai.router, prefix="/ai", tags=["AI Integration"])
-# 🔥 핵심 수정
-api_router.include_router(rag.router, prefix="/law", tags=["RAG"])
-
-api_router.include_router(wrong_note.router, prefix="/wrong-note", tags=["WrongNote"])
-
-api_router.include_router(
-    recommendations.router,
-    prefix="/recommendations",
-    tags=["Recommendations"]
-)
