@@ -21,6 +21,7 @@ export default function SingleSolvePage() {
   const subject = searchParams.get("subject") || "";
   const year = searchParams.get("year") || "";
   const limit = searchParams.get("limit");
+  const random = searchParams.get("random");
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -57,7 +58,7 @@ export default function SingleSolvePage() {
     }
 
     return `${subject} ${getExamTypeLabel(examType)}`;
-  }, [examType, subject, year]);
+  }, [examType, subject, year, limit, random]);
 
   useEffect(() => {
     const fetchQuestions = async () => {
@@ -70,6 +71,7 @@ export default function SingleSolvePage() {
           subject,
           year: year || undefined,
           limit: limit ? Number(limit) : undefined,
+          random: random === "true",
         });
 
         const formattedQuestions = data.questions
@@ -107,7 +109,7 @@ export default function SingleSolvePage() {
     }
 
     fetchQuestions();
-  }, [examType, subject, year, limit]);
+  }, [examType, subject, year, limit, random]);
 
   const handleSelectChoice = (questionId: number, choiceNumber: number) => {
     if (checkedQuestions[questionId]) return;
@@ -152,7 +154,6 @@ export default function SingleSolvePage() {
 
     try {
       await submitBulkAnswers(examType, answers, questions);
-      alert("채점이 완료되었습니다. 오답은 오답노트에 저장됩니다.");
       router.push("/wrong-note");
     } catch (error) {
       console.error(error);

@@ -34,22 +34,20 @@ const examIconMap = {
   DRIVERS_LICENSE_2: ShieldCheck,
 }
 
-// 화면 카드에서 사용할 데이터 형태
 type ExamCard = {
   id: string
   name: string
   examType: string
-  subject: string
+  displaySubject: string
+  apiSubject: string
   years: string[]
   totalQuestionCount: number
 }
 
-// 시험 종류별 아이콘 반환
 function getExamIcon(examType: string) {
   return examIconMap[examType as keyof typeof examIconMap] ?? BookOpen
 }
 
-// 시험 종류별 카드 색상 반환
 function getExamColor(examType: string) {
   switch (examType) {
     case 'CS_GENERAL':
@@ -64,35 +62,34 @@ function getExamColor(examType: string) {
   }
 }
 
-// 운전면허는 화면에 보여줄 과목명을 고정
-function getExamSubjectName(exam: SingleStudyExam) {
-  if (
-    exam.examType === 'DRIVERS_LICENSE_1' ||
-    exam.examType === 'DRIVERS_LICENSE_2'
-  ) {
-    return '운전면허 필기 기출'
+function isDriverLicense(examType: string) {
+  return examType.startsWith('DRIVERS_LICENSE')
+}
+
+// 화면 표시용 과목명
+function getDisplaySubjectName(exam: SingleStudyExam) {
+  if (isDriverLicense(exam.examType)) {
+    return '운전면허 필기'
   }
 
   return exam.subjects[0]?.name ?? ''
 }
 
-// 시험별 전체 문제 수 계산
+// API 요청용 과목명
+function getApiSubjectName(exam: SingleStudyExam) {
+  return exam.subjects[0]?.name ?? ''
+}
+
 function getExamTotalQuestionCount(exam: SingleStudyExam) {
   return exam.subjects.reduce((subjectSum, subject) => {
     return subjectSum + subject.totalQuestionCount
   }, 0)
 }
 
-// 국가직/지방직 회차 연도 목록 추출
 function getExamYears(exam: SingleStudyExam) {
   const years = exam.subjects.flatMap((subject) => subject.years)
 
   return Array.from(new Set(years)).sort((a, b) => Number(b) - Number(a))
-}
-
-// 운전면허 필기 여부 확인
-function isDriverLicense(examType: string) {
-  return examType.startsWith('DRIVERS_LICENSE')
 }
 
 export default function OneQuestionPage() {
@@ -105,7 +102,6 @@ export default function OneQuestionPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
 
-  // 한 문제씩 학습 가능한 시험 목록 조회
   useEffect(() => {
     async function fetchStudyExams() {
       try {
@@ -138,19 +134,18 @@ export default function OneQuestionPage() {
     fetchStudyExams()
   }, [])
 
-  // API 응답 데이터를 카드 UI에서 쓰기 좋은 형태로 변환
   const examCards = useMemo<ExamCard[]>(() => {
     return studyExams.map((exam) => ({
       id: exam.id,
       name: exam.name,
       examType: exam.examType,
-      subject: getExamSubjectName(exam),
+      displaySubject: getDisplaySubjectName(exam),
+      apiSubject: getApiSubjectName(exam),
       years: getExamYears(exam),
       totalQuestionCount: getExamTotalQuestionCount(exam),
     }))
   }, [studyExams])
 
-  // 검색어 기준으로 시험 카드 필터링
   const filteredExamCards = useMemo(() => {
     const keyword = searchText.trim().toLowerCase()
 
@@ -159,15 +154,13 @@ export default function OneQuestionPage() {
     return examCards.filter((exam) => {
       return (
         exam.name.toLowerCase().includes(keyword) ||
-        exam.subject.toLowerCase().includes(keyword) ||
+        exam.displaySubject.toLowerCase().includes(keyword) ||
+        exam.apiSubject.toLowerCase().includes(keyword) ||
         exam.years.some((year) => year.includes(keyword))
       )
     })
   }, [examCards, searchText])
 
-  // 카드 클릭 시 동작
-  // 운전면허: 바로 랜덤 40문제 풀이로 이동
-  // 국가직/지방직: 연도 선택 모달 열기
   const handleExamClick = (exam: ExamCard) => {
     if (isDriverLicense(exam.examType)) {
       handleStartStudy(exam)
@@ -177,13 +170,10 @@ export default function OneQuestionPage() {
     setSelectedExam(exam)
   }
 
-  // 실제 풀이 페이지로 이동
-  // 국가직/지방직은 year 포함
-  // 운전면허는 limit=40, random=true 포함
   const handleStartStudy = (exam: ExamCard, year?: string) => {
     const params = new URLSearchParams({
       exam_type: exam.examType,
-      subject: exam.subject,
+      subject: exam.apiSubject,
     })
 
     if (isDriverLicense(exam.examType)) {
@@ -206,26 +196,17 @@ export default function OneQuestionPage() {
       <Sidebar isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
 
       <section className="mx-auto w-full max-w-6xl px-8 pb-12 pt-28">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <p className="mb-3 text-sm font-medium text-slate-500">
-              기출문제 <span className="mx-2">›</span>
-              <span className="text-slate-900">한 문제씩 학습</span>
-            </p>
+        <div className="mb-8">
+          <p className="mb-3 text-sm font-medium text-slate-500">
+            기출문제 <span className="mx-2">›</span>
+            <span className="text-slate-900">한 문제씩 학습</span>
+          </p>
 
-            <h1 className="text-3xl font-bold">한 문제씩 학습</h1>
-            <p className="mt-2 text-slate-500">
-              국가직·지방직은 회차별로, 운전면허 필기는 랜덤 40문제로
-              학습할 수 있어요.
-            </p>
-          </div>
-
-          <button
-            onClick={() => router.push('/mypage')}
-            className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-blue-300 hover:text-blue-600"
-          >
-            학습 통계
-          </button>
+          <h1 className="text-3xl font-bold">한 문제씩 학습</h1>
+          <p className="mt-2 text-slate-500">
+            국가직·지방직은 회차별로, 운전면허 필기는 랜덤 40문제로
+            학습할 수 있어요.
+          </p>
         </div>
 
         <div className="mb-6 flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
@@ -282,11 +263,13 @@ export default function OneQuestionPage() {
                   </div>
 
                   <h2 className="text-xl font-bold">
-                    {isDriverLicense(exam.examType) ? '운전면허 필기' : exam.name}
+                    {isDriverLicense(exam.examType)
+                      ? '운전면허 필기'
+                      : exam.name}
                   </h2>
 
                   <p className="mt-2 text-sm text-slate-500">
-                    {exam.subject}
+                    {exam.displaySubject}
                   </p>
 
                   <p className="mt-1 text-sm text-slate-500">
@@ -299,9 +282,7 @@ export default function OneQuestionPage() {
 
                   <div className="mt-6 flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
                     <span className="text-sm font-semibold text-slate-500">
-                      {isDriverLicense(exam.examType)
-                        ? '학습 문제'
-                        : '전체 문제'}
+                      {isDriverLicense(exam.examType) ? '학습 문제' : '전체 문제'}
                     </span>
                     <span className="font-black text-blue-600">
                       {isDriverLicense(exam.examType)

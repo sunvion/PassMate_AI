@@ -8,6 +8,7 @@ export async function getExamQuestions(params: {
   subject: string;
   year?: string;
   limit?: number;
+  random?: boolean;
 }): Promise<ExamQuestionsResponse> {
   const query = new URLSearchParams({
     exam_type: params.examType,
@@ -20,6 +21,10 @@ export async function getExamQuestions(params: {
 
   if (params.limit) {
     query.append("limit", String(params.limit));
+  }
+
+  if (params.random) {
+    query.append("random", "true");
   }
 
   const res = await fetch(
@@ -41,12 +46,14 @@ export async function getExamQuestions(params: {
 
   const data: Question[] = await res.json();
 
+  const isDriverLicense = params.examType.startsWith("DRIVERS_LICENSE");
+
   let questions: Question[];
 
-  if (params.examType === "DRIVERS_LICENSE_1" && !params.limit) {
+  if (isDriverLicense) {
     questions = [...data]
       .sort(() => Math.random() - 0.5)
-      .slice(0, 40)
+      .slice(0, params.limit ?? 40)
       .map((question, index) => ({
         ...question,
         number: index + 1,
@@ -77,8 +84,6 @@ export async function submitBulkAnswers(
       time: 0,
     })),
   };
-
-  console.log("제출 body:", body);
 
   const token = localStorage.getItem("token");
 

@@ -28,6 +28,8 @@ type ExamOption = {
 
 // 회차 풀이 기록 타입
 type HistoryDetail = {
+  id?: number
+  attempt_id?: number
   exam_type: string
   year: number
   subject: string
@@ -188,6 +190,7 @@ export default function MyPage() {
   }, [wrongNotes, selectedExam])
 
   const latestHistory = filteredHistories[0]
+  const latestAttemptId = latestHistory?.attempt_id ?? latestHistory?.id
   const latestWrongNote = filteredWrongNotes[0]
 
   const hasStudyData = !!latestHistory
@@ -312,19 +315,17 @@ export default function MyPage() {
 
                 <div className="flex-1">
                   <p className="text-sm font-semibold text-slate-500">
-                    {selectedExam.label} 전체 문제 기준
+                    {selectedExam.label}
                   </p>
 
-                  <p className="mt-2 text-4xl font-black">
-                    {selectedExam.totalBankQuestions}
-                    <span className="ml-2 text-xl text-slate-500">문제</span>
+                  <p className="mt-2 text-3xl font-black">
+                    이어서 학습
                   </p>
 
                   <p className="mt-5 text-sm font-bold leading-relaxed text-slate-500">
-                    선택한 시험의 전체 문제를 한 문제씩 랜덤으로 학습할 수
-                    있어요.
+                    최근에 학습하던 시험을 기준으로 한 문제씩 이어서 풀 수 있어요.
                     <br />
-                    과목이나 단원 선택 없이 바로 시작합니다.
+                    학습 기록 연동은 추후 반영 예정입니다.
                   </p>
                 </div>
               </div>
@@ -334,14 +335,14 @@ export default function MyPage() {
                   <p className="text-sm font-semibold text-slate-500">
                     한 문제씩 학습
                   </p>
-                  <p className="font-bold">전체 문제에서 랜덤으로 시작하기</p>
+                  <p className="font-bold">최근 학습한 시험 이어서 풀기</p>
                 </div>
 
                 <button
                   onClick={handleStartSingleStudy}
                   className="rounded-xl bg-blue-600 px-6 py-3 font-bold text-white transition hover:bg-blue-700"
                 >
-                  학습하기 →
+                  이어서 학습하기 →
                 </button>
               </div>
             </article>
@@ -412,10 +413,17 @@ export default function MyPage() {
                 </div>
 
                 <button
-                  onClick={() => router.push('/wrong-note')}
+                  onClick={() => {
+                    if (latestAttemptId) {
+                      router.push(`/exam/result/${latestAttemptId}`)
+                      return
+                    }
+
+                    router.push('/wrong-note')
+                  }}
                   className="rounded-xl bg-emerald-600 px-6 py-3 font-bold text-white transition hover:bg-emerald-700"
                 >
-                  오답 보기 →
+                  결과 상세 보기 →
                 </button>
               </div>
             </article>
@@ -511,9 +519,10 @@ export default function MyPage() {
                 {filteredWrongNotes.length > 0 ? (
                   <div className="space-y-3">
                     {filteredWrongNotes.slice(0, 2).map((note) => (
-                      <div
+                      <button
                         key={note.id}
-                        className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-4 py-3 text-sm"
+                        onClick={() => router.push(`/wrong-note/${note.id}`)}
+                        className="flex w-full items-center justify-between gap-3 rounded-xl bg-slate-50 px-4 py-3 text-left text-sm transition hover:bg-violet-50"
                       >
                         <span className="shrink-0 text-slate-500">
                           {getDateText(note.created_at)}
@@ -526,7 +535,7 @@ export default function MyPage() {
                         <span className="shrink-0 font-black text-red-500">
                           {note.total_count}문제
                         </span>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 ) : (
@@ -538,17 +547,10 @@ export default function MyPage() {
                 )}
               </div>
 
-              <div className="mt-6 grid grid-cols-2 gap-4">
+              <div className="mt-6">
                 <button
                   onClick={() => router.push('/wrong-note')}
-                  className="rounded-2xl border border-violet-300 py-4 font-black text-violet-600 transition hover:bg-violet-50"
-                >
-                  오답노트 바로가기 →
-                </button>
-
-                <button
-                  onClick={() => router.push('/wrong-note')}
-                  className="rounded-2xl border border-violet-300 py-4 font-black text-violet-600 transition hover:bg-violet-50"
+                  className="w-full rounded-2xl border border-violet-300 py-4 font-black text-violet-600 transition hover:bg-violet-50"
                 >
                   전체 오답노트 보기 →
                 </button>
