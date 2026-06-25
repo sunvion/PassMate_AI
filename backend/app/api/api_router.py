@@ -1,6 +1,7 @@
 # backend/app/api/api_router.py
 from fastapi import APIRouter
-from app.api.v1 import auth, users, exams, attempts, statistics  # 라우터 패키지 임포트
+# 💡 ai 패키지 임포트 추가
+from app.api.v1 import auth, users, exams, attempts, statistics, ai  
 
 api_router = APIRouter()
 
@@ -15,9 +16,12 @@ api_router.include_router(attempts.router, prefix="/attempts", tags=["Attempts"]
 # 📊 1. 최신 세션 반영형 통계 및 대시보드 도메인 라우터 등록
 api_router.include_router(statistics.router, prefix="/statistics", tags=["Statistics"])
 
-# 🆕 📄 2. 회차별 독립형 오답노트 관리 도메인 라우터 등록 (프론트엔드 요구사항 주소 바인딩)
+# 📄 2. 회차별 독립형 오답노트 관리 도메인 라우터 등록
 api_router.include_router(
     statistics.wrong_notebook_router, 
     prefix="/wrong-notebooks", 
     tags=["WrongNotebooks"]
 )
+
+# 🚀 🆕 3. AI 추천 및 분석 전용 도메인 라우터 등록 (프론트엔드 API 주소 바인딩)
+api_router.include_router(ai.router, prefix="/ai", tags=["AI Integration"])
