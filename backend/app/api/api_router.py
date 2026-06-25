@@ -1,6 +1,6 @@
 # backend/app/api/api_router.py
 from fastapi import APIRouter
-from app.api.v1 import auth, users, exams, attempts, statistics  # 라우터 패키지 임포트
+from app.api.v1 import auth, users, exams, attempts, statistics, recommendations  # 라우터 패키지 임포트
 
 api_router = APIRouter()
 
@@ -20,4 +20,10 @@ api_router.include_router(
     statistics.wrong_notebook_router, 
     prefix="/wrong-notebooks", 
     tags=["WrongNotebooks"]
+)
+
+api_router.include_router(
+    recommendations.router,
+    prefix="/recommendations",
+    tags=["Recommendations"]
 )
