@@ -166,11 +166,15 @@ export default function MyPage() {
   // 선택한 시험의 풀이 기록을 최신 응시일 순으로 정렬
   const filteredHistories = useMemo(() => {
     return histories
-      .filter(
-        (history) =>
-          history.exam_type === selectedExam.examType &&
-          history.subject === selectedExam.subject,
-      )
+      .filter((history) => {
+        const examMatched = history.exam_type === selectedExam.examType
+
+        const subjectMatched = selectedExam.examType.startsWith('DRIVERS_LICENSE')
+          ? true
+          : history.subject === selectedExam.subject
+
+        return examMatched && subjectMatched
+      })
       .sort((a, b) => {
         const timeA = new Date(a.submitted_at).getTime()
         const timeB = new Date(b.submitted_at).getTime()
@@ -181,11 +185,15 @@ export default function MyPage() {
   // 선택한 시험에 해당하는 오답노트만 필터링
   const filteredWrongNotes = useMemo(() => {
     return wrongNotes
-      .filter(
-        (note) =>
-          note.exam_type === selectedExam.examType &&
-          note.subject === selectedExam.subject,
-      )
+      .filter((note) => {
+        const examMatched = note.exam_type === selectedExam.examType
+
+        const subjectMatched = selectedExam.examType.startsWith('DRIVERS_LICENSE')
+          ? true
+          : note.subject === selectedExam.subject
+
+        return examMatched && subjectMatched
+      })
       .sort((a, b) => b.created_at.localeCompare(a.created_at))
   }, [wrongNotes, selectedExam])
 

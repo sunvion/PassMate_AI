@@ -67,13 +67,13 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     <>
       {isOpen && (
         <div
-          className="fixed inset-0 z-30 bg-black/40"
+          className="fixed inset-0 z-[999] bg-black/40"
           onClick={onClose}
         />
       )}
 
       <aside
-        className={`fixed left-4 top-20 z-40 h-[calc(100vh-6rem)] w-[90vw] max-w-[320px] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl transition-transform duration-300 ${
+        className={`fixed left-4 top-20 z-[1000] h-[calc(100vh-6rem)] w-[90vw] max-w-[320px] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl transition-transform duration-300 ${
           isOpen ? "translate-x-0" : "-translate-x-[120%]"
         }`}
       >

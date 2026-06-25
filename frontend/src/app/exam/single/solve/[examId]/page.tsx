@@ -44,21 +44,24 @@ export default function SingleSolvePage() {
       case "CS_LOCAL":
         return "지방직";
       case "DRIVERS_LICENSE_1":
-        return "운전면허 1종";
       case "DRIVERS_LICENSE_2":
-        return "운전면허 2종";
+        return "운전면허 필기";
       default:
         return examType;
     }
   };
 
   const displayTitle = useMemo(() => {
-    if (year) {
-      return `${year} ${subject} ${getExamTypeLabel(examType)}`;
+    if (examType.startsWith("DRIVERS_LICENSE")) {
+      return "운전면허 필기";
     }
 
-    return `${subject} ${getExamTypeLabel(examType)}`;
-  }, [examType, subject, year, limit, random]);
+    if (year) {
+      return `${year} ${getExamTypeLabel(examType)} ${subject}`;
+    }
+
+    return `${getExamTypeLabel(examType)} ${subject}`;
+  }, [examType, subject, year]);
 
   useEffect(() => {
     const fetchQuestions = async () => {

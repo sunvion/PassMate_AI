@@ -34,17 +34,17 @@ export default function ExamSolvePage() {
         return "지방직";
 
       case "DRIVERS_LICENSE_1":
-        return "운전면허 1종";
-
       case "DRIVERS_LICENSE_2":
-        return "운전면허 2종";
+        return "운전면허 필기";
 
       default:
         return examType;
     }
   };
 
-  const displayTitle = `${year} ${subject} ${getExamTypeLabel(examType)}`;
+  const displayTitle = examType.startsWith("DRIVERS_LICENSE")
+    ? "운전면허 필기"
+    : `${year} ${getExamTypeLabel(examType)} ${subject}`;
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [title, setTitle] = useState("");
