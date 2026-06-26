@@ -10,7 +10,7 @@ import SolveHeader from "@/components/exams/SolveHeader";
 import QuestionCard from "@/components/exams/QuestionCard";
 import QuestionNavigator from "@/components/exams/QuestionNavigator";
 
-import { getExamQuestions, submitBulkAnswers } from "@/lib/examApi";
+import { getExamQuestions, submitBulkAnswers, saveLearningProgress } from "@/lib/examApi";
 import { Question, SelectedAnswers } from "@/types/exam";
 
 export default function SingleSolvePage() {
@@ -137,6 +137,26 @@ export default function SingleSolvePage() {
     }));
   };
 
+  const handleSaveProgress = async () => {
+    if (!currentQuestion) return;
+
+    try {
+      await saveLearningProgress(
+        examType,
+        subject,
+        year ? Number(year) : null,
+        currentQuestion.id,
+        answeredCount
+      );
+
+      alert("현재 학습 상태를 저장했습니다.");
+      router.push("/mypage");
+    } catch (error) {
+      console.error(error);
+      alert("진행 상태 저장에 실패했습니다.");
+    }
+  };
+
   const handleMoveQuestion = (index: number) => {
     setCurrentIndex(index);
   };
@@ -233,13 +253,20 @@ export default function SingleSolvePage() {
                 </div>
               )}
 
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-3">
                 <button
                   onClick={handlePrev}
                   disabled={currentIndex === 0}
                   className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-40"
                 >
                   이전 문제
+                </button>
+
+                <button
+                  onClick={handleSaveProgress}
+                  className="rounded-xl border border-blue-200 bg-white px-6 py-3 text-sm font-bold text-blue-600 hover:bg-blue-50"
+                >
+                  나중에 학습
                 </button>
 
                 <button
