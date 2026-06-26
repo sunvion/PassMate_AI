@@ -33,3 +33,7 @@ class User(Base):
     # 💡 [핵심 추가] 신규 도메인 모델(History)과의 연결 관계를 선언합니다.
     # 클래스 이름("History")은 backend/app/models/history.py에 정의된 클래스명과 일치해야 합니다.
     solving_histories = relationship("ProblemSolvingHistory", back_populates="user", cascade="all, delete-orphan")
+
+    # 🤖 [핵심 추가]: 1:1 오답 과외 챗봇 모델(ChatRoom)과의 양방향 연관 관계 선언
+    # 이 코드가 있어야 ChatRoom 매퍼의 back_populates="chat_rooms" 명세와 정상적으로 짝이 맞물립니다.
+    chat_rooms = relationship("ChatRoom", back_populates="user", cascade="all, delete-orphan")
