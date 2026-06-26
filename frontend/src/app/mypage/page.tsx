@@ -118,6 +118,7 @@ export default function MyPage() {
   const [isLoading, setIsLoading] = useState(true)
 
   const selectedExam = examOptions[selectedExamIndex]
+  const isSelectedDriverLicense = selectedExam.examType.startsWith('DRIVERS_LICENSE')
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -220,19 +221,27 @@ export default function MyPage() {
   const latestWrongNote = filteredWrongNotes[0]
 
   const hasStudyData = !!latestHistory
-  const hasLatestProgress = !!latestProgress
+
+  const selectedProgress: LatestProgress | null =
+    latestProgress &&
+      latestProgress.exam_type === selectedExam.examType &&
+      (isSelectedDriverLicense || latestProgress.subject === selectedExam.subject)
+      ? latestProgress
+      : null
+
+  const hasLatestProgress = selectedProgress !== null
 
   const progressTotalCount =
-    latestProgress?.total_count ?? selectedExam.totalBankQuestions ?? 20
+    selectedProgress?.total_count ?? selectedExam.totalBankQuestions ?? 20
 
-  const progressSolvedCount = latestProgress?.solved_count ?? 0
+  const progressSolvedCount = selectedProgress?.solved_count ?? 0
 
   const progressRemainingCount =
-    latestProgress?.remaining_count ??
+    selectedProgress?.remaining_count ??
     Math.max(progressTotalCount - progressSolvedCount, 0)
 
   const progressPercent =
-    latestProgress?.progress_percent ??
+    selectedProgress?.progress_percent ??
     (progressTotalCount > 0
       ? Math.round((progressSolvedCount / progressTotalCount) * 100)
       : 0)
@@ -267,21 +276,25 @@ export default function MyPage() {
   )
 
   const handleStartSingleStudy = () => {
-    if (latestProgress) {
+    if (isSelectedDriverLicense) {
+      router.push('/exam/single')
+      return
+    }
+
+    if (selectedProgress) {
       const params = new URLSearchParams({
-        exam_type: latestProgress.exam_type,
-        subject: latestProgress.subject,
+        exam_type: selectedProgress.exam_type,
+        subject: selectedProgress.subject,
         resume: 'true',
-        last_question_id: String(latestProgress.last_question_id),
+        last_question_id: String(selectedProgress.last_question_id),
       })
 
-      if (latestProgress.year) {
-        params.set('year', String(latestProgress.year))
+      if (selectedProgress.year) {
+        params.set('year', String(selectedProgress.year))
       }
 
       router.push(
-        `/exam/single/solve/${
-          latestProgress.exam_id ?? latestProgress.last_question_id
+        `/exam/single/solve/${selectedProgress.exam_id ?? selectedProgress.last_question_id
         }?${params.toString()}`,
       )
       return
@@ -332,9 +345,8 @@ export default function MyPage() {
 
                 <ChevronDown
                   size={20}
-                  className={`text-slate-500 transition ${
-                    isSubjectOpen ? 'rotate-180' : ''
-                  }`}
+                  className={`text-slate-500 transition ${isSubjectOpen ? 'rotate-180' : ''
+                    }`}
                 />
               </button>
 
@@ -347,11 +359,10 @@ export default function MyPage() {
                         setSelectedExamIndex(index)
                         setIsSubjectOpen(false)
                       }}
-                      className={`w-full px-5 py-4 text-left font-bold transition ${
-                        selectedExamIndex === index
-                          ? 'bg-blue-50 text-blue-600'
-                          : 'hover:bg-slate-50'
-                      }`}
+                      className={`w-full px-5 py-4 text-left font-bold transition ${selectedExamIndex === index
+                        ? 'bg-blue-50 text-blue-600'
+                        : 'hover:bg-slate-50'
+                        }`}
                     >
                       {exam.label}
                     </button>
@@ -387,9 +398,9 @@ export default function MyPage() {
                 <div className="flex-1">
                   <p className="text-sm font-semibold text-slate-500">
                     {hasLatestProgress
-                      ? `${latestProgress.year ?? ''} ${getExamTypeLabel(
-                          latestProgress.exam_type,
-                        )} ${latestProgress.subject}`
+                      ? `${selectedProgress!.year ?? ''} ${getExamTypeLabel(
+                        selectedProgress!.exam_type,
+                      )} ${selectedProgress!.subject}`
                       : selectedExam.label}
                   </p>
 
@@ -422,9 +433,11 @@ export default function MyPage() {
                     마지막 학습 위치
                   </p>
                   <p className="font-bold">
-                    {hasLatestProgress
-                      ? `${latestProgress.last_question_id}번 문제 근처에서 이어서 풀기`
-                      : '아직 저장된 학습 위치가 없습니다.'}
+                    {isSelectedDriverLicense
+                      ? '매번 새로운 랜덤 40문제로 학습합니다.'
+                      : hasLatestProgress
+                        ? `최근 학습일 ${getDateText(selectedProgress.updated_at)}`
+                        : '아직 저장된 학습 위치가 없습니다.'}
                   </p>
                 </div>
 
@@ -432,7 +445,11 @@ export default function MyPage() {
                   onClick={handleStartSingleStudy}
                   className="rounded-xl bg-blue-600 px-6 py-3 font-bold text-white transition hover:bg-blue-700"
                 >
-                  {hasLatestProgress ? '이어서 하기 →' : '한 문제씩 학습하기 →'}
+                  {isSelectedDriverLicense
+                    ? '랜덤 40문제 다시 시작 →'
+                    : hasLatestProgress
+                      ? '이어서 하기 →'
+                      : '한 문제씩 학습하기 →'}
                 </button>
               </div>
             </article>
@@ -463,8 +480,8 @@ export default function MyPage() {
                   <p className="text-xl font-black">
                     {hasStudyData
                       ? `${latestHistory.year} ${getExamTypeLabel(
-                          latestHistory.exam_type,
-                        )} 9급 ${latestHistory.subject}`
+                        latestHistory.exam_type,
+                      )} 9급 ${latestHistory.subject}`
                       : '최근 응시 기록이 없어요'}
                   </p>
 
@@ -543,9 +560,8 @@ export default function MyPage() {
 
                       <div className="h-4 rounded-full bg-slate-100">
                         <div
-                          className={`h-4 rounded-full ${
-                            item.score >= 70 ? 'bg-blue-600' : 'bg-red-400'
-                          }`}
+                          className={`h-4 rounded-full ${item.score >= 70 ? 'bg-blue-600' : 'bg-red-400'
+                            }`}
                           style={{ width: `${item.score}%` }}
                         />
                       </div>

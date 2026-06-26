@@ -30,6 +30,7 @@ export default function SingleSolvePage() {
   const [checkedQuestions, setCheckedQuestions] = useState<Record<number, boolean>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+  const [saveMessage, setSaveMessage] = useState("");
 
   const currentQuestion = questions[currentIndex];
 
@@ -149,11 +150,14 @@ export default function SingleSolvePage() {
         answeredCount
       );
 
-      alert("현재 학습 상태를 저장했습니다.");
-      router.push("/mypage");
+      setSaveMessage("학습 상태가 저장되었어요.");
+
+      setTimeout(() => {
+        router.push("/mypage");
+      }, 900);
     } catch (error) {
       console.error(error);
-      alert("진행 상태 저장에 실패했습니다.");
+      setSaveMessage("학습 상태 저장에 실패했어요.");
     }
   };
 
@@ -284,6 +288,11 @@ export default function SingleSolvePage() {
                   다음 문제
                 </button>
               </div>
+              {saveMessage && (
+                <div className="rounded-2xl border border-blue-100 bg-blue-50 px-5 py-4 text-center text-sm font-bold text-blue-700 shadow-sm">
+                  {saveMessage}
+                </div>
+              )}
             </div>
 
             <div className="sticky top-[184px] self-start">
