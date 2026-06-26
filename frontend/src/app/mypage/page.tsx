@@ -18,7 +18,6 @@ import {
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
 
-// 시험 선택 드롭다운용 타입
 type ExamOption = {
   label: string
   examType: string
@@ -26,7 +25,6 @@ type ExamOption = {
   totalBankQuestions: number
 }
 
-// 회차 풀이 기록 타입
 type HistoryDetail = {
   id?: number
   attempt_id?: number
@@ -39,7 +37,6 @@ type HistoryDetail = {
   submitted_at: string
 }
 
-// 오답노트 목록 타입
 type WrongNotebookSummary = {
   id: number
   title: string
@@ -52,7 +49,19 @@ type WrongNotebookSummary = {
   created_at: string
 }
 
-// 대시보드에서 선택 가능한 시험 목록
+type LatestProgress = {
+  exam_id?: number
+  exam_type: string
+  subject: string
+  year: number | null
+  last_question_id: number
+  solved_count: number
+  total_count?: number
+  remaining_count?: number
+  progress_percent?: number
+  updated_at: string
+}
+
 const examOptions: ExamOption[] = [
   {
     label: '국가직 9급 컴퓨터일반',
@@ -74,7 +83,6 @@ const examOptions: ExamOption[] = [
   },
 ]
 
-// 시험 타입 한글 변환
 function getExamTypeLabel(examType: string) {
   switch (examType) {
     case 'CS_GENERAL':
@@ -89,7 +97,6 @@ function getExamTypeLabel(examType: string) {
   }
 }
 
-// 날짜 문자열을 yyyy-mm-dd로 표시
 function getDateText(date?: string) {
   if (!date) return '-'
   return date.slice(0, 10)
@@ -98,15 +105,16 @@ function getDateText(date?: string) {
 export default function MyPage() {
   const router = useRouter()
 
-  // UI 상태
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false)
   const [isSubjectOpen, setIsSubjectOpen] = useState(false)
   const [selectedExamIndex, setSelectedExamIndex] = useState(0)
 
-  // API 데이터 상태
   const [histories, setHistories] = useState<HistoryDetail[]>([])
   const [wrongNotes, setWrongNotes] = useState<WrongNotebookSummary[]>([])
+  const [latestProgress, setLatestProgress] = useState<LatestProgress | null>(
+    null,
+  )
   const [isLoading, setIsLoading] = useState(true)
 
   const selectedExam = examOptions[selectedExamIndex]
@@ -124,14 +132,18 @@ export default function MyPage() {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         }
 
-        // 성적 기록과 오답노트는 별도 API에서 조회
-        const [historyRes, wrongNoteRes] = await Promise.all([
+        const [historyRes, wrongNoteRes, progressRes] = await Promise.all([
           fetch(`${API_BASE_URL}/api/v1/statistics/history-details`, {
             method: 'GET',
             headers,
             cache: 'no-store',
           }),
           fetch(`${API_BASE_URL}/api/v1/wrong-notebooks`, {
+            method: 'GET',
+            headers,
+            cache: 'no-store',
+          }),
+          fetch(`${API_BASE_URL}/api/v1/statistics/latest-progress`, {
             method: 'GET',
             headers,
             cache: 'no-store',
@@ -151,10 +163,18 @@ export default function MyPage() {
         } else {
           setWrongNotes([])
         }
+
+        if (progressRes.ok) {
+          const progressData = await progressRes.json()
+          setLatestProgress(progressData)
+        } else {
+          setLatestProgress(null)
+        }
       } catch (error) {
         console.warn('학습 통계 데이터 조회 실패:', error)
         setHistories([])
         setWrongNotes([])
+        setLatestProgress(null)
       } finally {
         setIsLoading(false)
       }
@@ -163,7 +183,6 @@ export default function MyPage() {
     fetchDashboardData()
   }, [])
 
-  // 선택한 시험의 풀이 기록을 최신 응시일 순으로 정렬
   const filteredHistories = useMemo(() => {
     return histories
       .filter((history) => {
@@ -182,7 +201,6 @@ export default function MyPage() {
       })
   }, [histories, selectedExam])
 
-  // 선택한 시험에 해당하는 오답노트만 필터링
   const filteredWrongNotes = useMemo(() => {
     return wrongNotes
       .filter((note) => {
@@ -202,8 +220,23 @@ export default function MyPage() {
   const latestWrongNote = filteredWrongNotes[0]
 
   const hasStudyData = !!latestHistory
+  const hasLatestProgress = !!latestProgress
 
-  // 최근 응시 결과 계산
+  const progressTotalCount =
+    latestProgress?.total_count ?? selectedExam.totalBankQuestions ?? 20
+
+  const progressSolvedCount = latestProgress?.solved_count ?? 0
+
+  const progressRemainingCount =
+    latestProgress?.remaining_count ??
+    Math.max(progressTotalCount - progressSolvedCount, 0)
+
+  const progressPercent =
+    latestProgress?.progress_percent ??
+    (progressTotalCount > 0
+      ? Math.round((progressSolvedCount / progressTotalCount) * 100)
+      : 0)
+
   const totalQuestions = latestHistory?.total_questions ?? 20
   const correctCount = latestHistory?.correct_count ?? 0
   const score = latestHistory?.score ?? 0
@@ -211,8 +244,6 @@ export default function MyPage() {
 
   const recentHistories = filteredHistories.slice(0, 5)
 
-  // 최근 5회 점수 그래프 데이터
-  // filteredHistories가 이미 최신순이라 reverse 하면 안 됨
   const scoreTrend = recentHistories.map((history, index) => ({
     id: `${history.exam_type}-${history.year}-${history.submitted_at}-${index}`,
     label: `${history.year} ${getExamTypeLabel(history.exam_type)}`,
@@ -220,7 +251,6 @@ export default function MyPage() {
     score: history.score,
   }))
 
-  // 오답노트 집계
   const totalWrong = filteredWrongNotes.reduce(
     (sum, note) => sum + note.wrong_count,
     0,
@@ -236,8 +266,27 @@ export default function MyPage() {
     0,
   )
 
-  // 한 문제씩 학습 페이지로 이동
   const handleStartSingleStudy = () => {
+    if (latestProgress) {
+      const params = new URLSearchParams({
+        exam_type: latestProgress.exam_type,
+        subject: latestProgress.subject,
+        resume: 'true',
+        last_question_id: String(latestProgress.last_question_id),
+      })
+
+      if (latestProgress.year) {
+        params.set('year', String(latestProgress.year))
+      }
+
+      router.push(
+        `/exam/single/solve/${
+          latestProgress.exam_id ?? latestProgress.last_question_id
+        }?${params.toString()}`,
+      )
+      return
+    }
+
     router.push('/exam/single')
   }
 
@@ -264,7 +313,7 @@ export default function MyPage() {
               <p className="mt-3 text-slate-500">
                 {isLoading
                   ? '학습 데이터를 불러오는 중이에요.'
-                  : hasStudyData
+                  : hasStudyData || hasLatestProgress
                     ? '최근 학습 데이터를 기반으로 분석한 결과입니다.'
                     : '아직 학습 데이터가 없어요. 문제를 풀면 학습 통계가 채워집니다.'}
               </p>
@@ -280,10 +329,12 @@ export default function MyPage() {
                 className="flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-5 py-4 text-left shadow-sm transition hover:border-blue-200 hover:shadow-md"
               >
                 <span className="font-bold">{selectedExam.label}</span>
+
                 <ChevronDown
                   size={20}
-                  className={`text-slate-500 transition ${isSubjectOpen ? 'rotate-180' : ''
-                    }`}
+                  className={`text-slate-500 transition ${
+                    isSubjectOpen ? 'rotate-180' : ''
+                  }`}
                 />
               </button>
 
@@ -296,10 +347,11 @@ export default function MyPage() {
                         setSelectedExamIndex(index)
                         setIsSubjectOpen(false)
                       }}
-                      className={`w-full px-5 py-4 text-left font-bold transition ${selectedExamIndex === index
-                        ? 'bg-blue-50 text-blue-600'
-                        : 'hover:bg-slate-50'
-                        }`}
+                      className={`w-full px-5 py-4 text-left font-bold transition ${
+                        selectedExamIndex === index
+                          ? 'bg-blue-50 text-blue-600'
+                          : 'hover:bg-slate-50'
+                      }`}
                     >
                       {exam.label}
                     </button>
@@ -317,40 +369,70 @@ export default function MyPage() {
               </div>
 
               <div className="flex items-center gap-8">
-                <div className="flex h-40 w-40 items-center justify-center rounded-full bg-blue-50">
-                  <BookOpen className="text-blue-600" size={58} />
+                <div className="relative flex h-40 w-40 items-center justify-center rounded-full bg-blue-50">
+                  <div
+                    className="absolute inset-0 rounded-full"
+                    style={{
+                      background: `conic-gradient(#2563eb ${progressPercent}%, #eaf2ff 0)`,
+                    }}
+                  />
+                  <div className="relative flex h-32 w-32 items-center justify-center rounded-full bg-white">
+                    <span className="text-4xl font-black">
+                      {progressPercent}
+                      <span className="text-xl">%</span>
+                    </span>
+                  </div>
                 </div>
 
                 <div className="flex-1">
                   <p className="text-sm font-semibold text-slate-500">
-                    {selectedExam.label}
+                    {hasLatestProgress
+                      ? `${latestProgress.year ?? ''} ${getExamTypeLabel(
+                          latestProgress.exam_type,
+                        )} ${latestProgress.subject}`
+                      : selectedExam.label}
                   </p>
 
                   <p className="mt-2 text-3xl font-black">
-                    이어서 학습
+                    {hasLatestProgress ? '이어서 학습' : '학습 기록 없음'}
                   </p>
 
-                  <p className="mt-5 text-sm font-bold leading-relaxed text-slate-500">
-                    최근에 학습하던 시험을 기준으로 한 문제씩 이어서 풀 수 있어요.
-                    <br />
-                    학습 기록 연동은 추후 반영 예정입니다.
+                  <p className="mt-4 text-3xl font-black">
+                    {progressSolvedCount}
+                    <span className="ml-1 text-lg text-slate-500">
+                      / {progressTotalCount} 문제
+                    </span>
                   </p>
+
+                  <div className="mt-5 flex gap-5 text-sm font-bold">
+                    <span className="text-blue-600">
+                      푼 문제 {progressSolvedCount}
+                    </span>
+                    <span className="text-slate-300">|</span>
+                    <span className="text-red-500">
+                      안 푼 문제 {progressRemainingCount}
+                    </span>
+                  </div>
                 </div>
               </div>
 
               <div className="mt-6 flex items-center justify-between rounded-2xl bg-blue-50 px-5 py-4">
                 <div>
                   <p className="text-sm font-semibold text-slate-500">
-                    한 문제씩 학습
+                    마지막 학습 위치
                   </p>
-                  <p className="font-bold">최근 학습한 시험 이어서 풀기</p>
+                  <p className="font-bold">
+                    {hasLatestProgress
+                      ? `${latestProgress.last_question_id}번 문제 근처에서 이어서 풀기`
+                      : '아직 저장된 학습 위치가 없습니다.'}
+                  </p>
                 </div>
 
                 <button
                   onClick={handleStartSingleStudy}
                   className="rounded-xl bg-blue-600 px-6 py-3 font-bold text-white transition hover:bg-blue-700"
                 >
-                  이어서 학습하기 →
+                  {hasLatestProgress ? '이어서 하기 →' : '한 문제씩 학습하기 →'}
                 </button>
               </div>
             </article>
@@ -381,8 +463,8 @@ export default function MyPage() {
                   <p className="text-xl font-black">
                     {hasStudyData
                       ? `${latestHistory.year} ${getExamTypeLabel(
-                        latestHistory.exam_type,
-                      )} 9급 ${latestHistory.subject}`
+                          latestHistory.exam_type,
+                        )} 9급 ${latestHistory.subject}`
                       : '최근 응시 기록이 없어요'}
                   </p>
 
@@ -461,8 +543,9 @@ export default function MyPage() {
 
                       <div className="h-4 rounded-full bg-slate-100">
                         <div
-                          className={`h-4 rounded-full ${item.score >= 70 ? 'bg-blue-600' : 'bg-red-400'
-                            }`}
+                          className={`h-4 rounded-full ${
+                            item.score >= 70 ? 'bg-blue-600' : 'bg-red-400'
+                          }`}
                           style={{ width: `${item.score}%` }}
                         />
                       </div>
@@ -489,7 +572,6 @@ export default function MyPage() {
                 <h2 className="text-xl font-black">오답노트 현황</h2>
               </div>
 
-              {/* 오답노트 요약 */}
               <div className="rounded-2xl bg-violet-50 p-6">
                 <div className="flex items-center gap-5">
                   <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white text-violet-600">
@@ -497,7 +579,9 @@ export default function MyPage() {
                   </div>
 
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-slate-500">복습 대상 문제</p>
+                    <p className="text-sm font-semibold text-slate-500">
+                      복습 대상 문제
+                    </p>
 
                     <p className="mt-1 text-4xl font-black">
                       {totalReviewCount}
@@ -507,20 +591,23 @@ export default function MyPage() {
                     <div className="mt-3 flex gap-3 text-sm font-bold">
                       <span className="text-red-500">오답 {totalWrong}</span>
                       <span className="text-slate-300">|</span>
-                      <span className="text-orange-500">미풀이 {totalUnsolved}</span>
+                      <span className="text-orange-500">
+                        미풀이 {totalUnsolved}
+                      </span>
                     </div>
                   </div>
                 </div>
 
                 <div className="mt-5 rounded-xl bg-white/70 px-4 py-3">
-                  <p className="text-sm font-semibold text-slate-500">최근 오답노트</p>
+                  <p className="text-sm font-semibold text-slate-500">
+                    최근 오답노트
+                  </p>
                   <p className="mt-1 truncate font-black">
                     {latestWrongNote ? latestWrongNote.title : '아직 없음'}
                   </p>
                 </div>
               </div>
 
-              {/* 최근 추가된 오답노트 리스트 */}
               <div className="mt-5 rounded-2xl border border-slate-200 p-6">
                 <p className="mb-4 font-black">최근 추가된 오답노트</p>
 

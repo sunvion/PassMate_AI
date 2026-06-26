@@ -15,25 +15,15 @@ export async function getExamQuestions(params: {
     subject: params.subject,
   });
 
-  if (params.year) {
-    query.append("year", params.year);
-  }
-
-  if (params.limit) {
-    query.append("limit", String(params.limit));
-  }
-
-  if (params.random) {
-    query.append("random", "true");
-  }
+  if (params.year) query.append("year", params.year);
+  if (params.limit) query.append("limit", String(params.limit));
+  if (params.random) query.append("random", "true");
 
   const res = await fetch(
     `${API_BASE_URL}/api/v1/exams/questions?${query.toString()}`,
     {
       method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       cache: "no-store",
     }
   );
@@ -45,24 +35,17 @@ export async function getExamQuestions(params: {
   }
 
   const data: Question[] = await res.json();
-
   const isDriverLicense = params.examType.startsWith("DRIVERS_LICENSE");
 
-  let questions: Question[];
-
-  if (isDriverLicense) {
-    questions = [...data]
-      .sort(() => Math.random() - 0.5)
-      .slice(0, params.limit ?? 40)
-      .map((question, index) => ({
-        ...question,
-        number: index + 1,
-      }));
-  } else {
-    questions = data.map((question) => ({
-      ...question,
-    }));
-  }
+  const questions = isDriverLicense
+    ? [...data]
+        .sort(() => Math.random() - 0.5)
+        .slice(0, params.limit ?? 40)
+        .map((question, index) => ({
+          ...question,
+          number: index + 1,
+        }))
+    : data.map((question) => ({ ...question }));
 
   return {
     examId: 0,
@@ -101,6 +84,40 @@ export async function submitBulkAnswers(
     const errorText = await res.text();
     console.error("제출 실패:", res.status, errorText);
     throw new Error("제출에 실패했습니다.");
+  }
+
+  return res.json();
+}
+
+export async function saveLearningProgress(
+  examType: string,
+  subject: string,
+  year: number | null,
+  lastQuestionId: number,
+  solvedCount: number
+) {
+  const token = localStorage.getItem("token");
+
+  const res = await fetch(`${API_BASE_URL}/api/v1/statistics/progress`, {
+    method: "POST",
+    mode: "cors",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({
+      exam_type: examType,
+      subject,
+      year,
+      last_question_id: lastQuestionId,
+      solved_count: solvedCount,
+    }),
+  });
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error("진행 상태 저장 실패:", res.status, errorText);
+    throw new Error("진행 상태 저장 실패");
   }
 
   return res.json();
