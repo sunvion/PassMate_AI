@@ -64,9 +64,9 @@ async def submit_single_question(
 
     # 2. [이어서 학습하기] 진행 상태 자동 누적 적재 (고속 인덱싱 기반 UPSERT 작동)
     progress_query = text("""
-        INSERT INTO user_learning_progress (user_id, exam_type, subject, last_question_id, solved_count, updated_at)
-        VALUES (:user_id, :exam_type, :subject, :last_question_id, 1, CURRENT_TIMESTAMP)
-        ON CONFLICT (user_id, exam_type, subject) 
+        INSERT INTO user_learning_progress (user_id, exam_type, subject, year, last_question_id, solved_count, updated_at)
+        VALUES (:user_id, :exam_type, :subject, COALESCE(:year, 0), :last_question_id, 1, CURRENT_TIMESTAMP)
+        ON CONFLICT (user_id, exam_type, subject, year) 
         DO UPDATE SET 
             last_question_id = EXCLUDED.last_question_id,
             solved_count = user_learning_progress.solved_count + 1,
@@ -76,6 +76,7 @@ async def submit_single_question(
         "user_id": user_id, 
         "exam_type": question.exam_type,
         "subject": question.subject, 
+        "year": question.year,  # 🆕 기출 연도 데이터 소싱 추가
         "last_question_id": q_id
     })
 

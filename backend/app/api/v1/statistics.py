@@ -74,33 +74,37 @@ async def read_latest_progress(
     db: AsyncSession = Depends(get_db)
 ):
     """
-    🆕 [신규 추가]
     유저가 한 문제씩 풀기 도중 페이지를 이탈했을 때, 가장 최근에 업데이트된 과목 진도 명세를 1건 추출합니다.
-    이 데이터는 대시보드의 '이어서 학습하기' 링크 및 컨텍스트 매핑에 활용됩니다.
+    프론트엔드 요구사항에 맞춰 해당 시험지의 총 문항 수(total_count)와 라우팅용 exam_id를 보완하여 반환합니다.
     """
     user_res = await db.execute(text("SELECT id FROM users WHERE email = :email"), {"email": current_user})
     user_id = user_res.scalar()
     if not user_id: 
         raise HTTPException(status_code=404, detail="유저를 찾을 수 없습니다.")
     
+    # 💡 [고도화 스케일 쿼리]: 내부 인라인 스칼라 서브쿼리로 해당 기출지 세트의 전체 문제 수를 실시간 집계합니다.
     query = text("""
-        SELECT exam_type, subject, last_question_id, solved_count, updated_at
-        FROM user_learning_progress
-        WHERE user_id = :user_id
-        ORDER BY updated_at DESC
+        SELECT ulp.exam_type, ulp.subject, ulp.year, ulp.last_question_id, ulp.solved_count, ulp.updated_at,
+               (SELECT COUNT(*) FROM questions q WHERE q.exam_type = ulp.exam_type AND q.subject = ulp.subject AND COALESCE(q.year, 0) = ulp.year) as total_count
+        FROM user_learning_progress ulp
+        WHERE ulp.user_id = :user_id
+        ORDER BY ulp.updated_at DESC
         LIMIT 1
     """)
     res = await db.execute(query, {"user_id": user_id})
     row = res.first()
     
     if not row:
-        return None  # 학습 기록이 전혀 없는 신규 유저인 경우 프론트엔드가 버튼을 비활성화할 수 있도록 null 처리
+        return None  
         
     return {
         "exam_type": row.exam_type,
         "subject": row.subject,
+        "year": None if row.year == 0 else row.year,
+        "exam_id": row.year,              # 🆕 프론트엔드가 컴포넌트 라우팅 및 기출 식별을 위해 요구한 변수 매핑
         "last_question_id": row.last_question_id,
         "solved_count": row.solved_count,
+        "total_count": row.total_count,    # 🆕 프론트엔드가 남은 문제 및 진행률 연산을 위해 요구한 총 문항 수 추가 반환
         "updated_at": row.updated_at
     }
 

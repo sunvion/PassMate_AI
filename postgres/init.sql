@@ -86,5 +86,17 @@ CREATE TABLE IF NOT EXISTS user_learning_progress (
     CONSTRAINT unique_user_exam_subject UNIQUE (user_id, exam_type, subject)
 );
 
+CREATE TABLE IF NOT EXISTS user_learning_progress (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    exam_type VARCHAR(50) NOT NULL,
+    subject VARCHAR(100) NOT NULL,
+    year INT NOT NULL DEFAULT 0, -- 🆕 정밀 세션 분리 및 total_count 계산을 위한 연도 컬럼 추가
+    last_question_id BIGINT NOT NULL REFERENCES questions(id) ON DELETE CASCADE,
+    solved_count INT NOT NULL DEFAULT 1,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unique_user_exam_subject_year UNIQUE (user_id, exam_type, subject, year) -- 🆕 제약조건 확장
+);
+
 -- (필요하다면) pgvector를 활용할 임베딩 저장용 컬럼을 나중에 추가할 수도 있습니다.
 -- 예: ALTER TABLE questions ADD COLUMN embedding vector(1536);
