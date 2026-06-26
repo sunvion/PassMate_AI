@@ -152,7 +152,7 @@ class CRUDStatistics:
         return True
 
 
-    # 🆕 ================= 독립형 오답노트 관리 비즈니스 로직 연동 (CRUD) =================
+    # ================= 독립형 오답노트 관리 비즈니스 로직 연동 (CRUD) =================
 
     async def get_wrong_notebooks_list(self, db: AsyncSession, user_id: int) -> List[Dict[str, Any]]:
         """
@@ -190,18 +190,23 @@ class CRUDStatistics:
         ]
 
     async def get_wrong_notebook_detail(self, db: AsyncSession, user_id: int, notebook_id: int) -> Optional[Dict[str, Any]]:
+        """
+        2. 오답노트 단일 상세 조회 (GET /api/v1/wrong-notebooks/{wrong_notebook_id})
+        💡 [개정]: wni.question_number를 확실히 추가 로드하고, 실제 시험지 번호 순서대로 단정하게 정렬 오름차순 반환합니다.
+        """
         nb_query = text("SELECT id, title, exam_type, year, subject FROM wrong_notebooks WHERE id = :id AND user_id = :user_id")
         nb_res = await db.execute(nb_query, {"id": notebook_id, "user_id": user_id})
         nb_row = nb_res.first()
         if not nb_row: return None
 
-        # 💡 [SQL 교정]: SELECT 절 맨 뒤에 q.image_url을 명시적으로 추가하여 JOIN 소싱 실행
+        # 💡 [SQL 교정 완료]: wni.question_number 컬럼 SELECT 추가 및 기출 시험 순서 정렬 가중치 부여
         items_query = text("""
-            SELECT wni.question_id, q.question, q.options, wni.selected_option, q.answer as correct_answer,
+            SELECT wni.question_id, wni.question_number, q.question, q.options, wni.selected_option, q.answer as correct_answer,
                    wni.is_correct, wni.status, q.explanation, wni.submitted_at, q.image_url
             FROM wrong_notebook_items wni
             JOIN questions q ON wni.question_id = q.id
-            WHERE wni.notebook_id = :notebook_id ORDER BY wni.id ASC
+            WHERE wni.notebook_id = :notebook_id 
+            ORDER BY wni.question_number ASC, wni.id ASC
         """)
         items_res = await db.execute(items_query, {"notebook_id": notebook_id})
         items_rows = items_res.all()
@@ -214,10 +219,16 @@ class CRUDStatistics:
             corr_ans = r.correct_answer if isinstance(r.correct_answer, list) else json.loads(r.correct_answer) if r.correct_answer else []
             
             items_list.append({
-                "question_id": r.question_id, "question": r.question, "options": opts,
-                "selected_option": sel_opt, "correct_answer": corr_ans, "is_correct": r.is_correct,
-                "status": r.status, "explanation": r.explanation, 
-                "image_url": r.image_url, # 💡 [딕셔너리 매핑 추가]: 파이썬 객체로 가공 바인딩
+                "question_id": r.question_id, 
+                "number": r.question_number, # 🆕 [교정 매핑]: Pydantic DTO 스키마 명세 규격 일치 ('number')
+                "question": r.question, 
+                "options": opts,
+                "selected_option": sel_opt, 
+                "correct_answer": corr_ans, 
+                "is_correct": r.is_correct,
+                "status": r.status, 
+                "explanation": r.explanation, 
+                "image_url": r.image_url,
                 "submitted_at": r.submitted_at
             })
         return {

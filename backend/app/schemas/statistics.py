@@ -43,7 +43,7 @@ class ExamSessionDetailResponse(BaseModel):
 
 
 # =================================================================
-# 🆕 2. 제출 회차별 독립 오답노트 도메인 스키마 (신규 추가)
+# 🆕 2. 제출 회차별 독립 오답노트 도메인 스키마 (보완 및 수정)
 # =================================================================
 
 class WrongNotebookListElement(BaseModel):
@@ -64,6 +64,7 @@ class WrongNotebookListElement(BaseModel):
 class WrongNotebookItemDetail(BaseModel):
     """💡 특정 오답노트 상세 내부의 문항별 원본 데이터 및 채점 정보 스냅샷"""
     question_id: int
+    number: int                        # 🆕 [프론트엔드 요구사항]: 원본 시험지 기준 실제 문제 번호 필드 추가
     question: str                      # 원본 문제 질문 본문
     options: dict                      # 사지/오지 선다 보기 딕셔너리 (JSONB 맵핑)
     selected_option: List[int]         # 사용자가 마킹했던 보기 배열 (안 풀었으면 [])
@@ -100,5 +101,3 @@ class ChapterWrongCountResponse(BaseModel):
     wrong_count: int
 
     model_config = ConfigDict(from_attributes=True)
-
-

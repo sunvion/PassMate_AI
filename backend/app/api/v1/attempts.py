@@ -28,7 +28,7 @@ async def submit_single_question(
 ):
     """
     한 문항을 풀 때마다 실시간으로 보기를 제출하여 즉시 채점 결과를 반환받고 유저 풀이 이력에 적재합니다.
-    동시에 '이어서 학습하기'를 위한 유저별 진도율 스냅샷 테이블을 실시간 자동 갱신(UPSERT)합니다.
+    동시에 '이어서 학습하기'를 위한 진도율 자동 갱신(UPSERT) 및 실시간 오답 노출 번호 지정을 처리합니다.
     """
     # OAuth 이메일 대응 가드: 구글 이메일 문자열을 기반으로 실제 DB상의 정수형 user_id(PK) 조회
     user_res = await db.execute(text("SELECT id FROM users WHERE email = :email"), {"email": current_user})
@@ -42,26 +42,27 @@ async def submit_single_question(
 
     # 💡 [시험 직렬별 복수 정답 알고리즘 분기 적용]
     if question.exam_type == "DRIVERS_LICENSE_1":
-        # 🚗 운전면허 학과: 복수 정답일 때 정답 요소가 완전히 일치해야 정답 인정
         is_correct = set(payload.selected_option) == set(question.answer)
     else:
-        # 🏛️ 공무원 기출(CS_GENERAL, CS_LOCAL): 복수 정답 중 하나만 골라도 정답으로 유연하게 인정 (부분집합 판별)
         is_correct = (
             bool(payload.selected_option) and 
             set(payload.selected_option).issubset(set(question.answer))
         )
 
-    # 🌟 [핵심 교정]: commit이 발생하여 객체가 만료되기 전에 리턴할 데이터를 미리 로컬 변수에 스냅샷 백업
+    # 🌟 commit이 발생하여 객체가 만료되기 전에 리턴 및 인서트할 데이터를 미리 로컬 변수에 스냅샷 백업
     q_id = question.id
     q_answer = question.answer
     q_explanation = question.explanation
+    
+    # 🆕 [교정]: 단일 문항의 원본 문제 번호를 소싱해 둡니다. (기본값 1)
+    q_num = getattr(question, "number", 1)
 
     # 1. 히스토리 테이블에 결과 스냅샷 저장
     await crud_history.create_history(
         db=db, user_id=user_id, attempt=payload, question=question, is_correct=is_correct
     )
 
-    # 🆕 2. [이어서 학습하기] 진행 상태 자동 누적 적재 (고속 인덱싱 기반 UPSERT 작동)
+    # 2. [이어서 학습하기] 진행 상태 자동 누적 적재 (고속 인덱싱 기반 UPSERT 작동)
     progress_query = text("""
         INSERT INTO user_learning_progress (user_id, exam_type, subject, last_question_id, solved_count, updated_at)
         VALUES (:user_id, :exam_type, :subject, :last_question_id, 1, CURRENT_TIMESTAMP)
@@ -78,7 +79,7 @@ async def submit_single_question(
         "last_question_id": q_id
     })
 
-    # 🆕 3. [개별 풀이 모드 전용] 하루 단위 오답노트 실시간 누적 및 워프 ID 추출 파이프라인
+    # 3. [개별 풀이 모드 전용] 하루 단위 오답노트 실시간 누적 및 워프 ID 추출 파이프라인
     wrong_notebook_id = None
     if not is_correct:
         today_str = datetime.now().strftime("%Y-%m-%d")
@@ -111,28 +112,29 @@ async def submit_single_question(
         item_exist = await db.execute(item_check, {"nb_id": wrong_notebook_id, "q_id": q_id})
         
         if not item_exist.scalar():
-            # 오답노트 문항 상세 보관함에 최종 바인딩 적재 (한 문제 풀이 모드이므로 상태는 무조건 'wrong')
+            # 💡 [SQL 수정]: 저장 인서트 절에 question_number 바인딩 매핑 추가
             item_ins = text("""
-                INSERT INTO wrong_notebook_items (notebook_id, question_id, selected_option, is_correct, status, submitted_at)
-                VALUES (:notebook_id, :question_id, :selected_option, :is_correct, 'wrong', CURRENT_TIMESTAMP)
+                INSERT INTO wrong_notebook_items (notebook_id, question_id, question_number, selected_option, is_correct, status, submitted_at)
+                VALUES (:notebook_id, :question_id, :question_number, :selected_option, :is_correct, 'wrong', CURRENT_TIMESTAMP)
             """)
             await db.execute(item_ins, {
                 "notebook_id": wrong_notebook_id, 
                 "question_id": q_id, 
+                "question_number": q_num,  # 🆕 원본 문제 번호 저장
                 "selected_option": json.dumps(payload.selected_option), 
                 "is_correct": is_correct
             })
 
-    # 트랜잭션 정상 반영 반영 커밋
+    # 트랜잭션 정상 반영 커밋
     await db.commit()
 
-    # 안전하게 백업된 순수 파이썬 변수 데이터와 워프용 오답노트 ID를 결합하여 반환
+    # 안전하게 백업된 데이터와 워프용 오답노트 ID를 결합하여 반환
     return AttemptResultResponse(
         question_id=q_id,
         is_correct=is_correct,
         correct_answer=q_answer,
         explanation=q_explanation,
-        wrong_notebook_id=wrong_notebook_id  # 💡 DTO 규격 매핑 추가 완료
+        wrong_notebook_id=wrong_notebook_id
     )
 
 
@@ -165,12 +167,13 @@ async def submit_bulk_exam(
     # 오답노트 아이템으로 이관할 타겟 문항 홀딩 큐
     wrong_items_queue = []
 
-    for attempt in payload.attempts:
+    # 💡 [교정]: enumerate를 동원하여 사용자가 시험을 본 원본 순서(문제지 상의 1번 ~ 20/40번 위치)를 보존합니다.
+    for idx, attempt in enumerate(payload.attempts, start=1):
         question = await crud_question.get_by_id(db, question_id=attempt.question_id)
         if not question:
             continue
         
-        # 💡 [시험 직렬별 복수 정답 알고리즘 일괄 적용]
+        # [시험 직렬별 복수 정답 알고리즘 일괄 적용]
         if question.exam_type == "DRIVERS_LICENSE_1":
             is_correct = set(attempt.selected_option) == set(question.answer)
         else:
@@ -182,14 +185,16 @@ async def submit_bulk_exam(
         if is_correct:
             correct_count += 1
 
-        # 💡 [프론트엔드 핵심 요청 교정 가드]: 
-        # 맞은 문제는 어떠한 형태(unsolved 오인 현상 포함)로도 오답노트에 침투하지 못하도록 필터링을 전면 격리합니다.
+        # [프론트엔드 핵심 요청 교정 가드]: 맞은 문제는 철저히 배제하고, 틀린 문항에 원본 기출 번호(q_num) 장착
         if not is_correct:
             is_unsolved = not attempt.selected_option or len(attempt.selected_option) == 0
             status_str = "unsolved" if is_unsolved else "wrong"
-            wrong_items_queue.append((attempt.question_id, attempt.selected_option, is_correct, status_str))
+            
+            # DB questions에 등록된 고유 기출 번호가 있다면 우선 소싱, 없다면 진행 인덱스(idx) 배치
+            q_num = getattr(question, "number", idx)
+            wrong_items_queue.append((attempt.question_id, q_num, attempt.selected_option, is_correct, status_str))
 
-        # 🌟 [핵심 교정]: 루프 내부에서도 커밋 전 데이터를 미리 스냅샷 백업
+        # 루프 내부에서도 커밋 전 데이터를 미리 스냅샷 백업
         q_id = question.id
         q_answer = question.answer
         q_explanation = question.explanation
@@ -208,7 +213,7 @@ async def submit_bulk_exam(
             )
         )
 
-    # 🆕 🎯 [독립형 오답노트 세션 트랜잭션 일괄 처리 엔진]
+    # [독립형 오답노트 세션 트랜잭션 일괄 처리 엔진]
     if wrong_items_queue and total_questions > 0:
         first_q = await crud_question.get_by_id(db, question_id=payload.attempts[0].question_id)
         if first_q:
@@ -245,18 +250,24 @@ async def submit_bulk_exam(
             })
             notebook_id = nb_res.scalar()
 
-            # 4. 소싱된 오답/미풀이 하위 문항 리스트 벌크 적재 진행
-            for q_id, sel_opt, is_corr, stat in wrong_items_queue:
+            # 4. 소싱된 오답/미풀이 하위 문항 리스트 벌크 적재 진행 (question_number 포함)
+            for q_id, q_num, sel_opt, is_corr, stat in wrong_items_queue:
+                # 💡 [SQL 수정]: question_number 컬럼 추가 바인딩 영구 적재
                 item_ins = text("""
-                    INSERT INTO wrong_notebook_items (notebook_id, question_id, selected_option, is_correct, status, submitted_at)
-                    VALUES (:notebook_id, :question_id, :selected_option, :is_correct, :status, :submitted_at)
+                    INSERT INTO wrong_notebook_items (notebook_id, question_id, question_number, selected_option, is_correct, status, submitted_at)
+                    VALUES (:notebook_id, :question_id, :question_number, :selected_option, :is_correct, :status, :submitted_at)
                 """)
                 await db.execute(item_ins, {
-                    "notebook_id": notebook_id, "question_id": q_id, "selected_option": json.dumps(sel_opt),
-                    "is_correct": is_corr, "status": stat, "submitted_at": shared_submitted_at
+                    "notebook_id": notebook_id, 
+                    "question_id": q_id, 
+                    "question_number": q_num,  # 🆕 원본 배치 번호 저장
+                    "selected_option": json.dumps(sel_opt),
+                    "is_correct": is_corr, 
+                    "status": stat, 
+                    "submitted_at": shared_submitted_at
                 })
             
-            # 모든 히스토리 + 오답노트 적재가 완벽히 성공했을 때 최종 단 1회 커밋(Commit)하여 정합성 보장
+            # 모든 히스토리 + 오답노트 적재가 완벽히 성공했을 때 최종 단 1회 커밋하여 데이터 무결성 보장
             await db.commit()
 
     # 20문항 공무원 시험지 규격 대응 과목 점수 환산 알고리즘 (개당 5점)
@@ -279,7 +290,6 @@ async def read_my_scores(
     사용자가 마이페이지 대시보드에 접근할 때 지금까지 통과한 기출 모의고사 세션 정보와
     환산 점수, 제출 일시 리스트 통계를 가공하여 리턴합니다.
     """
-    # OAuth 이메일 대응 가드: 구글 이메일 문자열을 기반으로 실제 DB상의 정수형 user_id(PK) 조회
     user_res = await db.execute(text("SELECT id FROM users WHERE email = :email"), {"email": current_user})
     user_id = user_res.scalar()
     if not user_id:

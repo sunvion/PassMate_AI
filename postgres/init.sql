@@ -64,12 +64,13 @@ CREATE TABLE IF NOT EXISTS wrong_notebooks (
 
 -- 6. 오답노트 내부에 귀속된 개별 문항 기록 테이블 (틀린문제 + 안푼문제)
 CREATE TABLE IF NOT EXISTS wrong_notebook_items (
-    id BIGSERIAL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,                               -- 오답노트 상세 아이템 고유 ID (PK)
     notebook_id BIGINT NOT NULL REFERENCES wrong_notebooks(id) ON DELETE CASCADE,
     question_id BIGINT NOT NULL REFERENCES questions(id) ON DELETE CASCADE,
-    selected_option JSONB NOT NULL,
-    is_correct BOOLEAN NOT NULL,
-    status VARCHAR(20) NOT NULL, -- 'wrong' (틀린 문제) 또는 'unsolved' (안 푼 문제)
+    question_number INT NOT NULL,                          -- 🆕 [프론트엔드 요청 교정]: 원본 시험지 기준 실제 문제 번호 컬럼 반영
+    selected_option JSONB NOT NULL,                        -- 당시 유저가 마킹한 오답 마킹 배열 데이터
+    is_correct BOOLEAN NOT NULL,                           -- 정오 상태 백업 데이터 (무조건 false 가드)
+    status VARCHAR(20) NOT NULL,                            -- 내부 문항 분류 식별자 ('wrong': 틀린 문제 / 'unsolved': 안 푼 문제)
     submitted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
