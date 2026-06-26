@@ -298,3 +298,100 @@ async def read_my_scores(
 
     score_summaries = await crud_history.get_user_scores_summary(db, user_id=user_id)
     return score_summaries
+
+
+
+@router.get("/{attempt_id}/resume", summary="기존 응시 세션 이어서 풀기 화면 데이터 복원 조회")
+async def resume_exam_session(
+    attempt_id: int,
+    current_user: Any = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    대시보드에서 '이어서 학습' 클릭 시 프론트엔드가 시험 세션을 완벽히 복원할 수 있도록,
+    해당 시험의 모든 문제 목록과 유저가 이번 회차(청크)에서 마킹한 선택 답안을 결합하여 반환합니다.
+    """
+    # 1. 토큰 기반 유저 고유 ID 확인
+    user_res = await db.execute(text("SELECT id FROM users WHERE email = :email"), {"email": current_user})
+    user_id = user_res.scalar()
+    if not user_id:
+        raise HTTPException(status_code=404, detail="유저를 찾을 수 없습니다.")
+    
+    # 2. 진행 상태 포인터 기록 조회
+    progress_query = text("""
+        SELECT exam_type, subject, year, solved_count 
+        FROM user_learning_progress 
+        WHERE id = :attempt_id AND user_id = :user_id
+    """)
+    progress_res = await db.execute(progress_query, {"attempt_id": attempt_id, "user_id": user_id})
+    progress_row = progress_res.first()
+    if not progress_row:
+        raise HTTPException(status_code=404, detail="해당 응시 진행 세션 기록을 찾을 수 없습니다.")
+    
+    exam_type = progress_row.exam_type
+    subject = progress_row.subject
+    year_val = progress_row.year
+    
+    # 3. 해당 시험지에 귀속된 원본 기출문제 전체 세트 로드
+    questions_query = text("""
+        SELECT id, exam_type, subject, year, number, question, body, options, image_url
+        FROM questions
+        WHERE exam_type = :exam_type White AND subject = :subject AND COALESCE(year, 0) = :year
+        ORDER BY number ASC, id ASC
+    """)
+    questions_res = await db.execute(questions_query, {"exam_type": exam_type, "subject": subject, "year": year_val})
+    questions_rows = questions_res.all()
+    
+    # 4. 현재 진행 중인 세션(최신 청크)에서 사용자가 이미 제출/마킹했던 내역 역추적
+    history_query = text("""
+        SELECT question_id, selected_option 
+        FROM problem_solving_history
+        WHERE user_id = :user_id AND exam_type = :exam_type AND subject_snapshot = :subject AND COALESCE(year, 0) = :year
+        ORDER BY submitted_at ASC
+    """)
+    history_res = await db.execute(history_query, {"user_id": user_id, "exam_type": exam_type, "subject": subject, "year": year_val})
+    history_rows = history_res.all()
+    
+    # 직렬 규격 단위 동적 슬라이싱 기법 적용
+    chunk_size = 40 if exam_type == "DRIVERS_LICENSE_1" else 20
+    total_len = len(history_rows)
+    remainder = total_len % chunk_size
+    
+    if remainder == 0 and total_len > 0:
+        current_chunk = history_rows[-chunk_size:]
+    elif remainder > 0:
+        current_chunk = history_rows[-remainder:]
+    else:
+        current_chunk = []
+        
+    # 문항 고유 ID별 유저 기선택 답안 매핑 사전 구축
+    answered_map = {}
+    for h in current_chunk:
+        sel_opt = h.selected_option if isinstance(h.selected_option, list) else json.loads(h.selected_option) if h.selected_option else []
+        answered_map[h.question_id] = sel_opt
+        
+    # 5. 원본 문제 배열에 마킹 데이터 동적 바인딩 가공
+    questions_list = []
+    for q in questions_rows:
+        opts = q.options if isinstance(q.options, dict) else json.loads(q.options) if q.options else {}
+        questions_list.append({
+            "id": q.id,
+            "exam_type": q.exam_type,
+            "subject": q.subject,
+            "year": None if q.year == 0 or q.year is None else q.year,
+            "number": q.number,
+            "question": q.question,
+            "body": q.body,
+            "options": opts,
+            "image_url": q.image_url,
+            "selected_option": answered_map.get(q.id, []) # 🆕 핵심: 이미 마킹했으면 해당 보기 배열, 안 풀었으면 빈 배열([]) 반환
+        })
+        
+    return {
+        "exam_type": exam_type,
+        "subject": subject,
+        "year": None if year_val == 0 else year_val,
+        "solved_count": progress_row.solved_count,
+        "total_count": len(questions_rows),
+        "questions": questions_list
+    }

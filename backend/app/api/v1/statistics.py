@@ -75,17 +75,18 @@ async def read_latest_progress(
     db: AsyncSession = Depends(get_db)
 ):
     """
+    🎯 [고도화 반영 스펙]
     유저가 한 문제씩 풀기 도중 페이지를 이탈했을 때, 가장 최근에 업데이트된 과목 진도 명세를 1건 추출합니다.
-    프론트엔드 요구사항에 맞춰 해당 시험지의 총 문항 수(total_count)와 라우팅용 exam_id를 보완하여 반환합니다.
+    프론트엔드 요구사항에 맞춰 이어서 풀기 서클용 attempt_id와 남은 문제수 연산용 total_count를 결합 반환합니다.
     """
     user_res = await db.execute(text("SELECT id FROM users WHERE email = :email"), {"email": current_user})
     user_id = user_res.scalar()
-    if not user_id: 
+    if not user_id:
         raise HTTPException(status_code=404, detail="유저를 찾을 수 없습니다.")
     
-    # 💡 [고도화 스케일 쿼리]: 내부 인라인 스칼라 서브쿼리로 해당 기출지 세트의 전체 문제 수를 실시간 집계합니다.
+    # 💡 [집계 쿼리 융합]: 대시보드 진도 카드를 완벽히 그릴 수 있도록 메인 테이블 PK(id) 및 원본 문항 총합 수를 서브쿼리로 일괄 소싱합니다.
     query = text("""
-        SELECT ulp.exam_type, ulp.subject, ulp.year, ulp.last_question_id, ulp.solved_count, ulp.updated_at,
+        SELECT ulp.id, ulp.exam_type, ulp.subject, ulp.year, ulp.last_question_id, ulp.solved_count, ulp.updated_at,
                (SELECT COUNT(*) FROM questions q WHERE q.exam_type = ulp.exam_type AND q.subject = ulp.subject AND COALESCE(q.year, 0) = ulp.year) as total_count
         FROM user_learning_progress ulp
         WHERE ulp.user_id = :user_id
@@ -96,16 +97,17 @@ async def read_latest_progress(
     row = res.first()
     
     if not row:
-        return None  
+        return None 
         
     return {
+        "attempt_id": row.id,              # 🆕 프론트엔드가 '이어서 풀기 복원 API' 호출 시 주입할 세션 식별 고유키
         "exam_type": row.exam_type,
         "subject": row.subject,
         "year": None if row.year == 0 else row.year,
-        "exam_id": row.year,              # 🆕 프론트엔드가 컴포넌트 라우팅 및 기출 식별을 위해 요구한 변수 매핑
+        "exam_id": row.year,               # 🆕 프론트엔드가 라우팅 및 기출 세션 식별을 위해 요청한 바인딩 규격
         "last_question_id": row.last_question_id,
         "solved_count": row.solved_count,
-        "total_count": row.total_count,    # 🆕 프론트엔드가 남은 문제 및 진행률 연산을 위해 요구한 총 문항 수 추가 반환
+        "total_count": row.total_count,    # 🆕 프론트엔드가 진행률(solved / total) 및 남은 문항 출력을 위해 요청한 수치
         "updated_at": row.updated_at
     }
 
@@ -122,6 +124,48 @@ async def read_wrong_chapters(
         raise HTTPException(status_code=404, detail="유저를 찾을 수 없습니다.")
 
     return await crud_statistics.get_wrong_count_by_chapter(db=db, user_id=user_id)
+
+
+@router.post("/progress", summary="채점 없이 학습 진행 상태만 중간 저장 (나중에 학습 기능 대응)")
+async def save_learning_progress(
+    payload: LearningProgressSaveRequest,
+    current_user: Any = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    한 문제씩 풀기 화면에서 사용자가 '나중에 학습' 버튼을 눌러 이탈할 때 호출됩니다.
+    채점(오답 처리)이나 역사적 풀이 로그 적재를 일체 배제하고, 오직 대시보드 포인터 위치만 안전하게 세이브합니다.
+    """
+    # 1. 토큰 유효성 검증 및 유저 매핑
+    user_res = await db.execute(text("SELECT id FROM users WHERE email = :email"), {"email": current_user})
+    user_id = user_res.scalar()
+    if not user_id:
+        raise HTTPException(status_code=404, detail="유저를 찾을 수 없습니다.")
+
+    # 2. 순수 UPSERT 쿼리 실행 (ON CONFLICT 구문을 통해 기존 행이 있으면 덮어쓰고 없으면 인서트)
+    query = text("""
+        INSERT INTO user_learning_progress (user_id, exam_type, subject, year, last_question_id, solved_count, updated_at)
+        VALUES (:user_id, :exam_type, :subject, COALESCE(:year, 0), :last_question_id, :solved_count, CURRENT_TIMESTAMP)
+        ON CONFLICT (user_id, exam_type, subject, year) 
+        DO UPDATE SET 
+            last_question_id = EXCLUDED.last_question_id,
+            solved_count = EXCLUDED.solved_count,
+            updated_at = CURRENT_TIMESTAMP
+    """)
+    
+    await db.execute(query, {
+        "user_id": user_id,
+        "exam_type": payload.exam_type,
+        "subject": payload.subject,
+        "year": payload.year,
+        "last_question_id": payload.last_question_id,
+        "solved_count": payload.solved_count  # 프론트엔드가 계산해서 넘겨준 현재까지의 정밀 진도 수 박제
+    })
+    
+    # 영구 저장 커밋
+    await db.commit()
+    
+    return {"status": "success", "message": "학습 진행 상태가 안전하게 중간 저장되었습니다."}
 
 
 # =================================================================
@@ -197,44 +241,3 @@ async def delete_wrong_notebook(
     if not success:
         raise HTTPException(status_code=404, detail="오답노트를 찾을 수 없거나 삭제 권한이 없습니다.")
     return {"message": "오답노트가 삭제되었습니다."}
-
-@router.post("/progress", summary="채점 없이 학습 진행 상태만 중간 저장 (나중에 학습 기능 대응)")
-async def save_learning_progress(
-    payload: LearningProgressSaveRequest,
-    current_user: Any = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-):
-    """
-    한 문제씩 풀기 화면에서 사용자가 '나중에 학습' 버튼을 눌러 이탈할 때 호출됩니다.
-    채점(오답 처리)이나 역사적 풀이 로그 적재를 일체 배제하고, 오직 대시보드 포인터 위치만 안전하게 세이브합니다.
-    """
-    # 1. 토큰 유효성 검증 및 유저 매핑
-    user_res = await db.execute(text("SELECT id FROM users WHERE email = :email"), {"email": current_user})
-    user_id = user_res.scalar()
-    if not user_id: 
-        raise HTTPException(status_code=404, detail="유저를 찾을 수 없습니다.")
-
-    # 2. 순수 UPSERT 쿼리 실행 (ON CONFLICT 구문을 통해 기존 행이 있으면 덮어쓰고 없으면 인서트)
-    query = text("""
-        INSERT INTO user_learning_progress (user_id, exam_type, subject, year, last_question_id, solved_count, updated_at)
-        VALUES (:user_id, :exam_type, :subject, COALESCE(:year, 0), :last_question_id, :solved_count, CURRENT_TIMESTAMP)
-        ON CONFLICT (user_id, exam_type, subject, year) 
-        DO UPDATE SET 
-            last_question_id = EXCLUDED.last_question_id,
-            solved_count = EXCLUDED.solved_count,
-            updated_at = CURRENT_TIMESTAMP
-    """)
-    
-    await db.execute(query, {
-        "user_id": user_id,
-        "exam_type": payload.exam_type,
-        "subject": payload.subject,
-        "year": payload.year,
-        "last_question_id": payload.last_question_id,
-        "solved_count": payload.solved_count  # 프론트엔드가 계산해서 넘겨준 현재까지의 정밀 진도 수 박제
-    })
-    
-    # 영구 저장 커밋
-    await db.commit()
-    
-    return {"status": "success", "message": "학습 진행 상태가 안전하게 중간 저장되었습니다."}
