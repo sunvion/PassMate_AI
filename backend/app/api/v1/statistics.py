@@ -13,7 +13,8 @@ from app.schemas.statistics import (
     WrongNotebookListElement,       # 🆕 신규 목록 엘리먼트 DTO
     WrongNotebookDetailResponse,     # 🆕 신규 상세 응답 DTO
     WrongNotebookUpdateTitleRequest, # 🆕 신규 제목 변경 바디 DTO
-    ChapterWrongCountResponse
+    ChapterWrongCountResponse,
+    LearningProgressSaveRequest
 )
 
 router = APIRouter()
@@ -196,3 +197,44 @@ async def delete_wrong_notebook(
     if not success:
         raise HTTPException(status_code=404, detail="오답노트를 찾을 수 없거나 삭제 권한이 없습니다.")
     return {"message": "오답노트가 삭제되었습니다."}
+
+@router.post("/progress", summary="채점 없이 학습 진행 상태만 중간 저장 (나중에 학습 기능 대응)")
+async def save_learning_progress(
+    payload: LearningProgressSaveRequest,
+    current_user: Any = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    한 문제씩 풀기 화면에서 사용자가 '나중에 학습' 버튼을 눌러 이탈할 때 호출됩니다.
+    채점(오답 처리)이나 역사적 풀이 로그 적재를 일체 배제하고, 오직 대시보드 포인터 위치만 안전하게 세이브합니다.
+    """
+    # 1. 토큰 유효성 검증 및 유저 매핑
+    user_res = await db.execute(text("SELECT id FROM users WHERE email = :email"), {"email": current_user})
+    user_id = user_res.scalar()
+    if not user_id: 
+        raise HTTPException(status_code=404, detail="유저를 찾을 수 없습니다.")
+
+    # 2. 순수 UPSERT 쿼리 실행 (ON CONFLICT 구문을 통해 기존 행이 있으면 덮어쓰고 없으면 인서트)
+    query = text("""
+        INSERT INTO user_learning_progress (user_id, exam_type, subject, year, last_question_id, solved_count, updated_at)
+        VALUES (:user_id, :exam_type, :subject, COALESCE(:year, 0), :last_question_id, :solved_count, CURRENT_TIMESTAMP)
+        ON CONFLICT (user_id, exam_type, subject, year) 
+        DO UPDATE SET 
+            last_question_id = EXCLUDED.last_question_id,
+            solved_count = EXCLUDED.solved_count,
+            updated_at = CURRENT_TIMESTAMP
+    """)
+    
+    await db.execute(query, {
+        "user_id": user_id,
+        "exam_type": payload.exam_type,
+        "subject": payload.subject,
+        "year": payload.year,
+        "last_question_id": payload.last_question_id,
+        "solved_count": payload.solved_count  # 프론트엔드가 계산해서 넘겨준 현재까지의 정밀 진도 수 박제
+    })
+    
+    # 영구 저장 커밋
+    await db.commit()
+    
+    return {"status": "success", "message": "학습 진행 상태가 안전하게 중간 저장되었습니다."}

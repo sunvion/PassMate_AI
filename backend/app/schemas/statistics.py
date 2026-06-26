@@ -101,3 +101,12 @@ class ChapterWrongCountResponse(BaseModel):
     wrong_count: int
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class LearningProgressSaveRequest(BaseModel):
+    """💡 채점 없이 한 문제씩 풀기 도중 '나중에 학습' 클릭 시 상태 보존을 위한 요청 포맷"""
+    exam_type: str
+    subject: str
+    year: Optional[int] = 0            # 운전면허 등 연도 없는 과목은 기본값 0
+    last_question_id: int              # 이탈 시점에 화면에 머물러 있던 문제의 ID (PK)
+    solved_count: int                  # 프론트엔드 세션에서 현재까지 실제 풀이 완료한 누적 문항 수
