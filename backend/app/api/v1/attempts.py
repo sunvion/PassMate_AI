@@ -28,6 +28,7 @@ async def submit_single_question(
 ):
     """
     한 문항을 풀 때마다 실시간으로 보기를 제출하여 즉시 채점 결과를 반환받고 유저 풀이 이력에 적재합니다.
+    동시에 '이어서 학습하기'를 위한 유저별 진도율 스냅샷 테이블을 실시간 자동 갱신(UPSERT)합니다.
     """
     # OAuth 이메일 대응 가드: 구글 이메일 문자열을 기반으로 실제 DB상의 정수형 user_id(PK) 조회
     user_res = await db.execute(text("SELECT id FROM users WHERE email = :email"), {"email": current_user})
@@ -55,17 +56,83 @@ async def submit_single_question(
     q_answer = question.answer
     q_explanation = question.explanation
 
-    # 히스토리 테이블에 결과 스냅샷 저장 (이 안에서 db.commit이 일어나며 question 객체가 만료됨)
+    # 1. 히스토리 테이블에 결과 스냅샷 저장
     await crud_history.create_history(
         db=db, user_id=user_id, attempt=payload, question=question, is_correct=is_correct
     )
 
-    # 안전하게 백업된 순수 파이썬 변수 데이터를 사용하여 안전하게 리턴
+    # 🆕 2. [이어서 학습하기] 진행 상태 자동 누적 적재 (고속 인덱싱 기반 UPSERT 작동)
+    progress_query = text("""
+        INSERT INTO user_learning_progress (user_id, exam_type, subject, last_question_id, solved_count, updated_at)
+        VALUES (:user_id, :exam_type, :subject, :last_question_id, 1, CURRENT_TIMESTAMP)
+        ON CONFLICT (user_id, exam_type, subject) 
+        DO UPDATE SET 
+            last_question_id = EXCLUDED.last_question_id,
+            solved_count = user_learning_progress.solved_count + 1,
+            updated_at = CURRENT_TIMESTAMP
+    """)
+    await db.execute(progress_query, {
+        "user_id": user_id, 
+        "exam_type": question.exam_type,
+        "subject": question.subject, 
+        "last_question_id": q_id
+    })
+
+    # 🆕 3. [개별 풀이 모드 전용] 하루 단위 오답노트 실시간 누적 및 워프 ID 추출 파이프라인
+    wrong_notebook_id = None
+    if not is_correct:
+        today_str = datetime.now().strftime("%Y-%m-%d")
+        if question.exam_type in ["CS_GENERAL", "CS_NATIONAL"]:
+            target_title = f"{today_str} 국가직 {question.subject} 오답노트 (개별풀이)"
+        elif question.exam_type == "CS_LOCAL":
+            target_title = f"{today_str} 지방직 {question.subject} 오답노트 (개별풀이)"
+        else:
+            target_title = f"{today_str} {question.subject} 오답노트 (개별풀이)"
+
+        # 오늘 생성된 고유 오답노트 존재 여부 스캔
+        exist_check = text("SELECT id FROM wrong_notebooks WHERE user_id = :user_id AND title = :title")
+        exist_res = await db.execute(exist_check, {"user_id": user_id, "title": target_title})
+        wrong_notebook_id = exist_res.scalar()
+
+        if not wrong_notebook_id:
+            # 존재하지 않는다면 오늘 자 마스터 오답노트 카드 선제 발급
+            nb_ins = text("""
+                INSERT INTO wrong_notebooks (user_id, title, exam_type, year, subject, created_at)
+                VALUES (:user_id, :title, :exam_type, :year, :subject, CURRENT_TIMESTAMP) RETURNING id
+            """)
+            nb_res = await db.execute(nb_ins, {
+                "user_id": user_id, "title": target_title, "exam_type": question.exam_type,
+                "year": question.year, "subject": question.subject
+            })
+            wrong_notebook_id = nb_res.scalar()
+
+        # 당일 중복 문항 적재 방지용 유니크 가드 검증
+        item_check = text("SELECT id FROM wrong_notebook_items WHERE notebook_id = :nb_id AND question_id = :q_id")
+        item_exist = await db.execute(item_check, {"nb_id": wrong_notebook_id, "q_id": q_id})
+        
+        if not item_exist.scalar():
+            # 오답노트 문항 상세 보관함에 최종 바인딩 적재 (한 문제 풀이 모드이므로 상태는 무조건 'wrong')
+            item_ins = text("""
+                INSERT INTO wrong_notebook_items (notebook_id, question_id, selected_option, is_correct, status, submitted_at)
+                VALUES (:notebook_id, :question_id, :selected_option, :is_correct, 'wrong', CURRENT_TIMESTAMP)
+            """)
+            await db.execute(item_ins, {
+                "notebook_id": wrong_notebook_id, 
+                "question_id": q_id, 
+                "selected_option": json.dumps(payload.selected_option), 
+                "is_correct": is_correct
+            })
+
+    # 트랜잭션 정상 반영 반영 커밋
+    await db.commit()
+
+    # 안전하게 백업된 순수 파이썬 변수 데이터와 워프용 오답노트 ID를 결합하여 반환
     return AttemptResultResponse(
         question_id=q_id,
         is_correct=is_correct,
         correct_answer=q_answer,
-        explanation=q_explanation
+        explanation=q_explanation,
+        wrong_notebook_id=wrong_notebook_id  # 💡 DTO 규격 매핑 추가 완료
     )
 
 
@@ -78,7 +145,6 @@ async def submit_bulk_exam(
     """
     모의고사 스트리밍/스크롤 모드에서 사용자가 '전체 채점하기'를 눌렀을 때,
     20개 문항의 정답 여부를 일괄 계산하여 전체 스코어보드 결과 리스트를 생성 및 영구 적재합니다.
-    동시에 틀린 문제와 안 푼 문제를 모아 독립된 고유 오답노트 세션을 자동 생성합니다.
     """
     if not payload.attempts:
         raise HTTPException(status_code=400, detail="제출된 답안 데이터가 비어 있습니다.")
@@ -116,19 +182,19 @@ async def submit_bulk_exam(
         if is_correct:
             correct_count += 1
 
-        # 💡 [오답노트 조건 소싱 분기]: 안 푼 문제(unsolved)와 틀린 문제(wrong) 분류 가드
-        is_unsolved = not attempt.selected_option or len(attempt.selected_option) == 0
-        if is_unsolved:
-            wrong_items_queue.append((attempt.question_id, attempt.selected_option, is_correct, "unsolved"))
-        elif not is_correct:
-            wrong_items_queue.append((attempt.question_id, attempt.selected_option, is_correct, "wrong"))
+        # 💡 [프론트엔드 핵심 요청 교정 가드]: 
+        # 맞은 문제는 어떠한 형태(unsolved 오인 현상 포함)로도 오답노트에 침투하지 못하도록 필터링을 전면 격리합니다.
+        if not is_correct:
+            is_unsolved = not attempt.selected_option or len(attempt.selected_option) == 0
+            status_str = "unsolved" if is_unsolved else "wrong"
+            wrong_items_queue.append((attempt.question_id, attempt.selected_option, is_correct, status_str))
 
         # 🌟 [핵심 교정]: 루프 내부에서도 커밋 전 데이터를 미리 스냅샷 백업
         q_id = question.id
         q_answer = question.answer
         q_explanation = question.explanation
 
-        # 개별 문항 풀이 기록 적재 (이 내부에서 커밋이 일어나도 안전하게 방어됨)
+        # 개별 문항 풀이 기록 적재
         await crud_history.create_history(
             db=db, user_id=user_id, attempt=attempt, question=question, is_correct=is_correct
         )

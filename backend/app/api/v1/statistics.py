@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
-from typing import Any, List
+from typing import Any, List, Optional
 
 from app.db.session import get_db
 from app.core.security import get_current_user
@@ -12,16 +12,15 @@ from app.schemas.statistics import (
     ExamSessionDetailResponse,
     WrongNotebookListElement,       # 🆕 신규 목록 엘리먼트 DTO
     WrongNotebookDetailResponse,     # 🆕 신규 상세 응답 DTO
-    WrongNotebookUpdateTitleRequest,  # 🆕 신규 제목 변경 바디 DTO
+    WrongNotebookUpdateTitleRequest, # 🆕 신규 제목 변경 바디 DTO
     ChapterWrongCountResponse
 )
-
 
 router = APIRouter()
 wrong_notebook_router = APIRouter()  # 🆕 독립형 오답노트 전용 라우터 독립 분리 개설
 
 # =================================================================
-# 📊 1. 홈 대시보드 & 성적표 도메인 API (기존 유지 및 고도화)
+# 📊 1. 홈 대시보드 & 성적표 & 진도율 도메인 API (router)
 # =================================================================
 
 @router.get("/today-summary", response_model=DashboardSummaryResponse, summary="홈 대시보드 학습 요약 정보 반환")
@@ -69,8 +68,59 @@ async def clear_history(
     return {"message": "전체 풀이 이력이 성공적으로 초기화되었습니다."}
 
 
+@router.get("/latest-progress", summary="대시보드용 최근 학습 진행 상태 조회 (이어서 학습하기)")
+async def read_latest_progress(
+    current_user: Any = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    🆕 [신규 추가]
+    유저가 한 문제씩 풀기 도중 페이지를 이탈했을 때, 가장 최근에 업데이트된 과목 진도 명세를 1건 추출합니다.
+    이 데이터는 대시보드의 '이어서 학습하기' 링크 및 컨텍스트 매핑에 활용됩니다.
+    """
+    user_res = await db.execute(text("SELECT id FROM users WHERE email = :email"), {"email": current_user})
+    user_id = user_res.scalar()
+    if not user_id: 
+        raise HTTPException(status_code=404, detail="유저를 찾을 수 없습니다.")
+    
+    query = text("""
+        SELECT exam_type, subject, last_question_id, solved_count, updated_at
+        FROM user_learning_progress
+        WHERE user_id = :user_id
+        ORDER BY updated_at DESC
+        LIMIT 1
+    """)
+    res = await db.execute(query, {"user_id": user_id})
+    row = res.first()
+    
+    if not row:
+        return None  # 학습 기록이 전혀 없는 신규 유저인 경우 프론트엔드가 버튼을 비활성화할 수 있도록 null 처리
+        
+    return {
+        "exam_type": row.exam_type,
+        "subject": row.subject,
+        "last_question_id": row.last_question_id,
+        "solved_count": row.solved_count,
+        "updated_at": row.updated_at
+    }
+
+
+@router.get("/chapters", response_model=List[ChapterWrongCountResponse], summary="챕터별 오답 개수 집계 조회")
+async def read_wrong_chapters(
+    current_user: Any = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """사용자가 과목별/챕터별로 얼마나 많은 문제를 틀렸는지 집계하여 약점 분석 컴포넌트에 바인딩합니다."""
+    user_res = await db.execute(text("SELECT id FROM users WHERE email = :email"), {"email": current_user})
+    user_id = user_res.scalar()
+    if not user_id:
+        raise HTTPException(status_code=404, detail="유저를 찾을 수 없습니다.")
+
+    return await crud_statistics.get_wrong_count_by_chapter(db=db, user_id=user_id)
+
+
 # =================================================================
-# 🆕 2. 회차별 독립형 오답노트 관리 API (프론트엔드 연동 전용 스펙)
+# 🆕 2. 회차별 독립형 오답노트 관리 API (wrong_notebook_router)
 # =================================================================
 
 @wrong_notebook_router.get("", response_model=List[WrongNotebookListElement], summary="오답노트 목록 조회")
@@ -142,16 +192,3 @@ async def delete_wrong_notebook(
     if not success:
         raise HTTPException(status_code=404, detail="오답노트를 찾을 수 없거나 삭제 권한이 없습니다.")
     return {"message": "오답노트가 삭제되었습니다."}
-
-
-@router.get("/chapters", response_model=List[ChapterWrongCountResponse], summary="챕터별 오답 개수 집계 조회")
-async def read_wrong_chapters(
-    current_user: Any = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-):
-    user_res = await db.execute(text("SELECT id FROM users WHERE email = :email"), {"email": current_user})
-    user_id = user_res.scalar()
-    if not user_id:
-        raise HTTPException(status_code=404, detail="유저를 찾을 수 없습니다.")
-
-    return await crud_statistics.get_wrong_count_by_chapter(db=db, user_id=user_id)

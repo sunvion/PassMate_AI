@@ -73,5 +73,17 @@ CREATE TABLE IF NOT EXISTS wrong_notebook_items (
     submitted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 7. 한 문제씩 학습 진행 상태를 기억하기 위한 테이블 (이어서 학습하기 기능 대응)
+CREATE TABLE IF NOT EXISTS user_learning_progress (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    exam_type VARCHAR(50) NOT NULL,
+    subject VARCHAR(100) NOT NULL,
+    last_question_id BIGINT NOT NULL REFERENCES questions(id) ON DELETE CASCADE,
+    solved_count INT NOT NULL DEFAULT 1,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unique_user_exam_subject UNIQUE (user_id, exam_type, subject)
+);
+
 -- (필요하다면) pgvector를 활용할 임베딩 저장용 컬럼을 나중에 추가할 수도 있습니다.
 -- 예: ALTER TABLE questions ADD COLUMN embedding vector(1536);
