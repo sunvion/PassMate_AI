@@ -29,22 +29,38 @@ def build_context(question, similar_questions, law_chunks):
 
 async def build_question_context(db: AsyncSession, question_id: int) -> str:
     """
-    🚀 [신설] AI 챗봇 전용 컨텍스트 빌더
-    특정 문제 ID를 기반으로 GPT가 인지할 수 있는 완벽한 문제 요약 문맥을 생성합니다.
+    🚀 [고도화]: 기출문항의 모든 메타데이터를 통합하여 GPT 대화용 주입 컨텍스트를 조립합니다.
     """
     stmt = select(Question).filter(Question.id == question_id)
     result = await db.execute(stmt)
-    question_obj = result.scalars().first()
+    q = result.scalars().first()
     
-    if not question_obj:
+    if not q:
         return ""
         
-    # 오지/사지선다 보기 딕셔너리를 가독성 좋은 텍스트로 파싱
-    options_text = "\n".join([f"({k}) {v}" for k, v in question_obj.options.items()])
-    
-    return f"""- 과목/단원: {question_obj.subject} > {question_obj.chapter or '미분류 단원'}
-- 문제 질문: {question_obj.question}
-- 보기 구성:
-{options_text}
-- 시스템 정답 번호: {question_obj.answer}
-- 출제자 해설: {question_obj.explanation or '등록된 공식 해설이 없습니다.'}"""
+    # JSONB 데이터 구조인 사지/오지선다 보기를 줄바꿈 텍스트 포맷으로 예쁘게 파싱
+    options_parsed = ""
+    if isinstance(q.options, dict):
+        options_parsed = "\n".join([f"({k}) {v}" for k, v in q.options.items()])
+    else:
+        options_parsed = str(q.options)
+
+    # 시스템 정답 포맷 가공 (배열 파싱 대응)
+    answer_parsed = str(q.answer)
+
+    # 🖼️ 프론트엔드 퍼블릭 경로 스냅샷 확보 (추후 비전 연동용 예비 데이터)
+    image_info = f"없음 (순수 텍스트 문항)"
+    if q.image_url:
+        image_info = f"존재함 (경로: {q.image_url})"
+
+    return f"""[기출문제 원본 컨텍스트 데이터 스냅샷]
+- 시험 대분류: {q.exam_type}
+- 과목/단원: {q.subject} > {q.chapter or '미분류 상세 단원'}
+- 출제 문항 정보: {q.year or '미상'}년도 시행 / {q.number}번
+- 문제 발문(질문 본문): {q.question}
+- 지문 추가 텍스트(body): {q.body or '없음'}
+- 보기 구성 목록:
+{options_parsed}
+- 시스템 공식 정답: {answer_parsed}
+- 출제자 친절 해설: {q.explanation or '등록된 요약 해설이 없습니다.'}
+- 문항 이미지 에셋 링크 상태: {image_info}"""

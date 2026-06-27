@@ -8,7 +8,9 @@ from datetime import datetime
 # =================================================================
 
 class ChatRoomCreate(BaseModel):
-    title: str = Field(..., description="대화방 제목 (예: 문항 #161 AI 피드백)")
+    title: str = Field(..., description="대화방 제목")
+    # 💡 프론트엔드 진입 시점에 저격을 위해 넘겨받을 문제 고유 번호
+    question_id: Optional[int] = Field(None, description="선제적 컨텍스트 바인딩을 위한 문제 ID")
 
 class ChatRoomResponse(BaseModel):
     id: int
