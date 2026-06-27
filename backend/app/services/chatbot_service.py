@@ -76,13 +76,19 @@ async def process_user_message(db: AsyncSession, user_id: int, room_id: int, mes
     if not room or room.user_id != user_id:
         raise ValueError("해당 대화방에 메시지를 보낼 권한이 없습니다.")
 
-    # 1. 유저 질문 적재
+    # =================================================================
+    # 🌟 [핵심 버그 수정]: 내부 commit에 의해 room 객체가 만료되기 전에
+    # 필요한 속성(question_id)을 로컬 변수에 스냅샷으로 안전하게 백업합니다.
+    # =================================================================
+    room_question_id = room.question_id
+
+    # 1. 유저 질문 적재 (⚠️ 이 내부의 commit 때문에 상단 room 객체가 만료됨)
     await chatbot_crud.insert_chat_message(
         db=db,
         room_id=room_id,
         role="user",
         content=message_in.content,
-        question_id=room.question_id  # 💡 방 자체에 매핑된 기본 문제 ID 활용
+        question_id=room_question_id  # 백업된 변수 사용
     )
 
     # 2. 과목분류별 최적화 페르소나 및 이미지 소스 준비 단계
@@ -90,10 +96,10 @@ async def process_user_message(db: AsyncSession, user_id: int, room_id: int, mes
     q_info = None
     target_image = None
 
-    if room.question_id:
-        q_info = await db.get(Question, room.question_id)
+    if room_question_id:  # 💡 만료된 room.question_id 대신 백업본 변수 사용!
+        q_info = await db.get(Question, room_question_id)
         if q_info:
-            target_image = q_info.image_url  # llm_service로 보낼 이미지 에셋 경로 확보
+            target_image = q_info.image_url
             if "컴퓨터" in q_info.subject:
                 persona = "너는 컴퓨터구조, 데이터베이스, 운영체제론, 자료 구조, 프로그래밍 언어론, 소프트웨어 공학 및 시스템 설계, 데이터 통신과 네트워크, 인터넷 및 최신 기술 용어의 내부 원리를 꿰뚫고 있는 전산직 공무원 1:1 전문 기술 과외 강사야. 전공 도메인 지식에 근거해 매우 논리적이고 단계적으로 가르쳐줘."
             elif "도로" in q_info.subject or "운전" in q_info.subject:
@@ -106,12 +112,11 @@ async def process_user_message(db: AsyncSession, user_id: int, room_id: int, mes
         f"항상 정중한 존댓말로 친절하게 과외하듯 대답해줘."
     )
 
-    # 3. 🎯 [교정 및 추가]: 과목 데이터 보관 구조(이미지형 vs 텍스트형)에 따른 프롬프트 최종 분기
-    if room.question_id and q_info:
-        q_context = await build_question_context(db, room.question_id)
+    # 3. 과목 데이터 보관 구조(이미지형 vs 텍스트형)에 따른 프롬프트 최종 분기
+    if room_question_id and q_info:  # 💡 여기도 백업본 변수 활용
+        q_context = await build_question_context(db, room_question_id)
         
         if "컴퓨터" in q_info.subject:
-            # 💡 [컴퓨터일반 분기] 보기가 DB에 없으므로 멀티모달 비전 가이드 가동
             system_prompt = (
                 f"{persona}\n"
                 "아래 제공되는 [기출문항 정보]와 함께 입력되는 '이미지 파일'을 완벽히 매칭하여 학생의 질문에 답변해야 해.\n\n"
@@ -124,7 +129,6 @@ async def process_user_message(db: AsyncSession, user_id: int, room_id: int, mes
                 "친절하고 명확한 어조로, 전문성이 느껴지게 마크다운 문법을 활용하여 대답해줘."
             )
         else:
-            # 💡 [운전면허/도로교통법규 분기] 전부 텍스트로 존재하므로 텍스트 신뢰형 프롬프트 가동
             system_prompt = (
                 f"{persona}\n"
                 "아래 제공되는 완전무결한 [기출문항 정보] 데이터 세트를 기반으로 학생의 질문에 명쾌하게 답변해야 해.\n\n"
@@ -142,7 +146,7 @@ async def process_user_message(db: AsyncSession, user_id: int, room_id: int, mes
     for msg in current_history:
         openai_messages.append({"role": msg.role, "content": msg.content})
 
-    # 5. 🎯 [교정]: llm_service.py에 이미지 경로(target_image)를 함께 파라미터로 넘겨 Vision 활성화
+    # 5. llm_service.py에 이미지 경로를 파라미터로 넘겨 Vision 활성화
     ai_generated_content = await generate_chat_response(openai_messages, image_source=target_image)
 
     # 6. GPT 최종 피드백 답변 저장 후 컨트롤러 반환
@@ -151,6 +155,6 @@ async def process_user_message(db: AsyncSession, user_id: int, room_id: int, mes
         room_id=room_id,
         role="assistant",
         content=ai_generated_content,
-        question_id=room.question_id
+        question_id=room_question_id  # 💡 여기도 안전하게 백업본 변수 주입
     )
     return ai_message_record
