@@ -300,7 +300,6 @@ async def read_my_scores(
     return score_summaries
 
 
-
 @router.get("/{attempt_id}/resume", summary="기존 응시 세션 이어서 풀기 화면 데이터 복원 조회")
 async def resume_exam_session(
     attempt_id: int,
@@ -333,10 +332,11 @@ async def resume_exam_session(
     year_val = progress_row.year
     
     # 3. 해당 시험지에 귀속된 원본 기출문제 전체 세트 로드
+    # 💡 [오타 교정 완료]: WHERE 절 내부에 끼어있던 원인 불명의 'White' 키워드를 완전히 도려냈습니다.
     questions_query = text("""
         SELECT id, exam_type, subject, year, number, question, body, options, image_url
         FROM questions
-        WHERE exam_type = :exam_type White AND subject = :subject AND COALESCE(year, 0) = :year
+        WHERE exam_type = :exam_type AND subject = :subject AND COALESCE(year, 0) = :year
         ORDER BY number ASC, id ASC
     """)
     questions_res = await db.execute(questions_query, {"exam_type": exam_type, "subject": subject, "year": year_val})
