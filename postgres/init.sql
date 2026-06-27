@@ -94,6 +94,11 @@ CREATE TABLE IF NOT EXISTS user_learning_progress (
 CREATE TABLE IF NOT EXISTS chat_rooms (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    
+    -- 🎯 [핵심 추가]: 방이 생성되는 순간 어떤 기출문제를 추적하는 방인지 명시합니다.
+    -- 원본 문제가 삭제되더라도 유저의 대화방은 유지될 수 있도록 ON DELETE SET NULL을 적용합니다.
+    question_id BIGINT REFERENCES questions(id) ON DELETE SET NULL,
+    
     title VARCHAR(255) NOT NULL,                            -- 방 제목 (예: "문항 #161 오답 과외방")
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );

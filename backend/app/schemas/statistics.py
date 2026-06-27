@@ -110,3 +110,10 @@ class LearningProgressSaveRequest(BaseModel):
     year: Optional[int] = 0            # 운전면허 등 연도 없는 과목은 기본값 0
     last_question_id: int              # 이탈 시점에 화면에 머물러 있던 문제의 ID (PK)
     solved_count: int                  # 프론트엔드 세션에서 현재까지 실제 풀이 완료한 누적 문항 수
+
+class UserLearnedDomainElement(BaseModel):
+    """💡 유저가 실제 학습한 이력이 존재하는 고유 시험/과목 원소 포맷"""
+    exam_type: str                     # 예: 'CS_GENERAL', 'CS_LOCAL'
+    subject: str                       # 예: '컴퓨터일반'
+
+    model_config = ConfigDict(from_attributes=True)

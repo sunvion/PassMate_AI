@@ -3,17 +3,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List, Optional
 from app.models.chatbot import ChatRoom, ChatMessage
-from app.schemas.chatbot import ChatRoomCreate, ChatMessageCreate
+from app.schemas.chatbot import ChatRoomCreate
 
 # =================================================================
 # 🏢 1. ChatRoom 관련 비동기 SQL 처리부
 # =================================================================
 
 async def create_chat_room(db: AsyncSession, user_id: int, room_in: ChatRoomCreate) -> ChatRoom:
-    """새로운 AI 대화 전용 방을 생성합니다."""
+    """새로운 AI 대화 전용 방을 생성하며 문제 ID를 영구 바인딩합니다."""
     db_room = ChatRoom(
         user_id=user_id,
-        title=room_in.title
+        title=room_in.title,
+        question_id=room_in.question_id  # 💡 컬럼 매핑 추가
     )
     db.add(db_room)
     await db.commit()

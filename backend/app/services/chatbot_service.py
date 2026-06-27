@@ -1,21 +1,44 @@
-# app/services/chatbot_service.py
+# backend/app/services/chatbot_service.py
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 
 from app.crud import chatbot as chatbot_crud
 from app.models.chatbot import ChatRoom, ChatMessage
-from app.schemas.chatbot import ChatRoomCreate, ChatMessageCreate
+from app.models.question import Question  # 💡 과목 판별 조회를 위해 필수 포함
+from app.schemas.chatbot import ChatRoomCreate, ChatMessageCreate  # ⚠️ [핵심 교정]: 이 라인이 누락되어 NameError가 났던 것입니다!
 
-# 💡 이미 프로젝트 구조에 준비되어 있는 LLM 및 컨텍스트 빌더 모듈 임포트
+# 💡 프로젝트 구조에 준비되어 있는 LLM 및 컨텍스트 빌더 모듈 임포트
 from app.services.context_builder import build_question_context
 from app.services.llm_service import generate_chat_response
 
 
 async def create_new_room(db: AsyncSession, user_id: int, room_in: ChatRoomCreate) -> ChatRoom:
     """
-    [대화방 생성] 유저 전용 오답 클리닉 대화방 레코드를 신설합니다.
+    [대화방 신설 및 선제적 가이드 메시지 캐싱]
     """
-    return await chatbot_crud.create_chat_room(db=db, user_id=user_id, room_in=room_in)
+    # 1. 방 레코드 기본 생성 및 문제 ID 바인딩
+    room = await chatbot_crud.create_chat_room(db=db, user_id=user_id, room_in=room_in)
+    
+    # 2. 🎯 과목군을 역추적하여 첫 인사말(웰컴 메시지) 동적 커스텀 적재
+    welcome_content = "안녕하세요! 해당 문항에 대해 궁금한 점을 편하게 물어보세요. 보기 분석이나 핵심 개념을 1:1로 가르쳐 드립니다! 😊"
+    
+    if room_in.question_id:
+        q_obj = await db.get(Question, room_in.question_id)
+        if q_obj:
+            if "컴퓨터" in q_obj.subject:
+                welcome_content = f"안녕하세요! 💻 **컴퓨터일반** 전문 AI 튜터입니다. {q_obj.number}번 문제를 해설지와 함께 정밀 분석할 준비가 완료되었습니다. 질문을 입력해 주세요!"
+            elif "도로" in q_obj.subject or "운전" in q_obj.subject:
+                welcome_content = f"안녕하세요! 🚗 **운전면허** 전문 AI 강사입니다. {q_obj.number}번 문제에 대해서 무엇이든 대답해드릴게요. 무엇이 궁금하신가요?"
+
+    # 3. 챗봇이 열리자마자 띄워줄 인사말을 assistant 역할로 DB에 즉시 캐시 저장
+    await chatbot_crud.insert_chat_message(
+        db=db,
+        room_id=room.id,
+        role="assistant",
+        content=welcome_content,
+        question_id=room_in.question_id
+    )
+    return room
 
 
 async def get_user_rooms(db: AsyncSession, user_id: int) -> List[ChatRoom]:
@@ -37,74 +60,90 @@ async def get_room_messages(db: AsyncSession, room_id: int, user_id: int) -> Lis
     return await chatbot_crud.get_messages_by_room(db=db, room_id=room_id)
 
 
-async def process_user_message(
-    db: AsyncSession, 
-    user_id: int, 
-    room_id: int, 
-    message_in: ChatMessageCreate
-) -> ChatMessage:
+async def process_user_message(db: AsyncSession, user_id: int, room_id: int, message_in: ChatMessageCreate) -> ChatMessage:
     """
-    [핵심 엔진] 유저의 질문 수신 -> 오답 컨텍스트 조립 -> GPT 호출 -> 대화 내역 쌍방 저장을 총괄합니다.
+    [대화 진행 인터셉터]
+    마스터 룸에 바인딩된 원래 기출문제 정보를 기반으로 매 질문 턴마다 완벽한 문맥 프롬프트를 재생성합니다.
     """
-    # 1. 대화방 소유권 검증
     room = await chatbot_crud.get_room_by_id(db, room_id)
     if not room or room.user_id != user_id:
         raise ValueError("해당 대화방에 메시지를 보낼 권한이 없습니다.")
 
-    # 2. 유저가 입력한 새 질문을 데이터베이스(DB)에 먼저 선반영 저장
+    # 1. 유저 질문 적재
     await chatbot_crud.insert_chat_message(
         db=db,
         room_id=room_id,
         role="user",
         content=message_in.content,
-        question_id=message_in.question_id
+        question_id=room.question_id  # 💡 방 자체에 매핑된 기본 문제 ID 활용
     )
 
-    # 3. GPT에게 대화의 맥락(Context)을 학습시키기 위한 프롬프트 가이드라인(System Prompt) 초기 조립
+    # 2. 과목분류별 최적화 페르소나 및 이미지 소스 준비 단계
+    persona = "너는 친절하고 전문적인 기출문제 오답 클리닉 선생님이야."
+    q_info = None
+    target_image = None
+
+    if room.question_id:
+        q_info = await db.get(Question, room.question_id)
+        if q_info:
+            target_image = q_info.image_url  # llm_service로 보낼 이미지 에셋 경로 확보
+            if "컴퓨터" in q_info.subject:
+                persona = "너는 컴퓨터구조, 데이터베이스, 운영체제론, 자료 구조, 프로그래밍 언어론, 소프트웨어 공학 및 시스템 설계, 데이터 통신과 네트워크, 인터넷 및 최신 기술 용어의 내부 원리를 꿰뚫고 있는 전산직 공무원 1:1 전문 기술 과외 강사야. 전공 도메인 지식에 근거해 매우 논리적이고 단계적으로 가르쳐줘."
+            elif "도로" in q_info.subject or "운전" in q_info.subject:
+                persona = "너는 국가 도로교통법 조항 및 교통안전 규칙 표준 지침에 정통한 법규 강사야. 벌점 기준, 행정 처분, 도로 수칙 등의 법적 근거를 명확히 선언하며 차분하게 설명해줘."
+
+    # 기본 베이스 가이드라인 라인 조립
     system_prompt = (
-        "너는 친절하고 전문적인 IT 컴퓨터일반 및 도로교통법규 기출문제 핵심 오답 과외 선생님인 'AI 오답 튜터'야.\n"
-        "학생이 질문한 내용에 대해 정답 해설을 보아도 이해하지 못한 구멍 난 개념이 무엇인지 파악하고,\n"
-        "이해하기 쉽도록 구체적인 예시나 비교 분석을 곁들여서 1:1 과외하듯 존댓말로 설명해줘."
+        f"{persona}\n"
+        f"학생이 문제를 왜 틀렸는지 자가진단할 수 있도록 유도하고, 정답 해설을 보아도 놓쳤던 맹점 개념을 채워주는 것이 임무야.\n"
+        f"항상 정중한 존댓말로 친절하게 과외하듯 대답해줘."
     )
 
-    # 4. 🎯 [오답 컨텍스트 주입 🌟] question_id가 실려왔다면 context_builder를 가동
-    if message_in.question_id:
-        try:
-            # context_builder.py 내 비동기 함수를 호출하여 해당 문항의 발문/보기/정답/해설 텍스트 덩어리를 획득
-            q_context = await build_question_context(db, message_in.question_id)
-            if q_context:
-                system_prompt += (
-                    f"\n\n[🚨 현재 학생이 틀려서 질문 중인 기출문항 정보]\n{q_context}\n"
-                    f"위 문제의 발문, 보기 구조, 공식 정답 해설을 완벽히 숙지한 채로 학생의 다음 질문에 정교하게 답변해줘."
-                )
-        except Exception as ce:
-            # 툴이 아직 미완성이거나 에러가 나더라도 대화 자체가 깨지지 않도록 가볍게 로그만 남기고 백업 처리
-            print(f"⚠️ [CONTEXT_BUILDER_WARNING] 퀴즈 문맥 확보 실패: {str(ce)}")
+    # 3. 🎯 [교정 및 추가]: 과목 데이터 보관 구조(이미지형 vs 텍스트형)에 따른 프롬프트 최종 분기
+    if room.question_id and q_info:
+        q_context = await build_question_context(db, room.question_id)
+        
+        if "컴퓨터" in q_info.subject:
+            # 💡 [컴퓨터일반 분기] 보기가 DB에 없으므로 멀티모달 비전 가이드 가동
+            system_prompt = (
+                f"{persona}\n"
+                "아래 제공되는 [기출문항 정보]와 함께 입력되는 '이미지 파일'을 완벽히 매칭하여 학생의 질문에 답변해야 해.\n\n"
+                f"[🚨 기출문항 정보]\n{q_context}\n\n"
+                "💡 [★멀티모달 시각 지침★]\n"
+                "1. 현재 문제의 보기(①~④)는 데이터베이스에 텍스트로 저장되어 있지 않고, 함께 입력되는 '이미지 파일'에 포함되어 있어.\n"
+                "2. 학생이 '4번 보기 왜 틀림?', '③번 보기 보충 설명해줘'와 같이 특정 보기를 짚어 질문하면, 이미지 속에서 해당 번호의 텍스트와 내용을 직접 눈으로 확인하고 정확하게 매칭하여 해설해줘.\n"
+                "3. 이미지에 포함된 글자가 조금 흐릿하더라도 맥락(컴퓨터일반 지식)을 고려하여 가장 정확한 IT 전문 용어로 해석해야 해.\n"
+                "4. 만약 이미지 식별이 불가능할 정도로 깨져 있다면 환각(지어내기)을 일으키지 말고, '회원님, 이미지 속 보기 글자가 흐려 정확한 식별이 어렵습니다. 번거로우시겠지만 보기 내용을 적어주시면 더 자세히 설명해 드릴게요!'라고 안내해줘.\n\n"
+                "친절하고 명확한 어조로, 전문성이 느껴지게 마크다운 문법을 활용하여 대답해줘."
+            )
+        else:
+            # 💡 [운전면허/도로교통법규 분기] 전부 텍스트로 존재하므로 텍스트 신뢰형 프롬프트 가동
+            system_prompt = (
+                f"{persona}\n"
+                "아래 제공되는 완전무결한 [기출문항 정보] 데이터 세트를 기반으로 학생의 질문에 명쾌하게 답변해야 해.\n\n"
+                f"[🚨 기출문항 정보]\n{q_context}\n\n"
+                "💡 [텍스트 매칭 가이드라인]\n"
+                "1. 본 운전면허 문항은 질문 발문과 보기 목록((1)~(4)), 공식 정답 및 출제자 해설이 모두 텍스트로 완벽히 등록되어 있어.\n"
+                "2. 따라서 학생이 '3번 보기 설명해줘' 혹은 '왜 2번은 정답이 아니야?'라고 질문하면, 위의 [기출문항 정보] 내 '보기 구성 목록' 텍스트를 즉시 대조하여 관련된 도로교통법 조항 근거와 함께 정확하게 과외 튜팅을 제공해줘.\n"
+                "3. 제공된 텍스트 콘텍스트를 최우선으로 신뢰하여 답변하고, 정중하고 친절한 톤을 상시 유지해줘."
+            )
 
-    # 5. OpenAI 대화 스택 규격에 맞게 [System Prompt + 누적 대화 히스토리] 어레이 빌드
-    openai_messages = [
-        {"role": "system", "content": system_prompt}
-    ]
-
-    # DB에서 지금까지 주고받은 전체 대화(방금 저장한 유저 질문 포함)를 순서대로 가져옴
+    # 4. 히스토리 배열 빌딩 및 OpenAI 전송
+    openai_messages = [{"role": "system", "content": system_prompt}]
     current_history = await chatbot_crud.get_messages_by_room(db, room_id)
+    
     for msg in current_history:
-        openai_messages.append({
-            "role": msg.role, 
-            "content": msg.content
-        })
+        openai_messages.append({"role": msg.role, "content": msg.content})
 
-    # 6. 🚀 llm_service.py를 깨워 OpenAI Async API 최종 연동 및 답변 생성 완료 수신 (await)
-    ai_generated_content = await generate_chat_response(openai_messages)
+    # 5. 🎯 [교정]: llm_service.py에 이미지 경로(target_image)를 함께 파라미터로 넘겨 Vision 활성화
+    ai_generated_content = await generate_chat_response(openai_messages, image_source=target_image)
 
-    # 7. GPT가 가공해낸 최종 답변을 assistant 역할로 DB에 영구 기록
+    # 6. GPT 최종 피드백 답변 저장 후 컨트롤러 반환
     ai_message_record = await chatbot_crud.insert_chat_message(
         db=db,
         room_id=room_id,
         role="assistant",
         content=ai_generated_content,
-        question_id=message_in.question_id
+        question_id=room.question_id
     )
-
-    # 8. 라우터로 완성된 AI 메시지 레코드 반환
     return ai_message_record

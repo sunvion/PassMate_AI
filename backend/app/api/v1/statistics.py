@@ -14,7 +14,8 @@ from app.schemas.statistics import (
     WrongNotebookDetailResponse,     # 🆕 신규 상세 응답 DTO
     WrongNotebookUpdateTitleRequest, # 🆕 신규 제목 변경 바디 DTO
     ChapterWrongCountResponse,
-    LearningProgressSaveRequest
+    LearningProgressSaveRequest,
+    UserLearnedDomainElement
 )
 
 router = APIRouter()
@@ -289,3 +290,39 @@ async def delete_wrong_notebook(
     if not success:
         raise HTTPException(status_code=404, detail="오답노트를 찾을 수 없거나 삭제 권한이 없습니다.")
     return {"message": "오답노트가 삭제되었습니다."}
+
+@router.get("/learned-domains", response_model=List[UserLearnedDomainElement], summary="유저가 실제 학습한 시험 및 과목 고유 목록 조회")
+async def read_user_learned_domains(
+    current_user: Any = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    마이페이지 학습 통계 탭/토글의 동적 렌더링을 위해 호출됩니다.
+    1. 전체 회차 일괄 풀이 이력(problem_solving_history)의 과목 스냅샷과
+    2. 한 문제씩 학습 진행 상태(user_learning_progress)의 진행 과목을 
+    데이터베이스 레이어에서 UNION 연산으로 자동 중복 제거하여 통합 추출합니다.
+    학습 이력이 전혀 없는 신규 유저라면 빈 배열([])을 안전하게 반환합니다.
+    """
+    # 1. 토큰 기반 유저 식별자 조회
+    user_res = await db.execute(text("SELECT id FROM users WHERE email = :email"), {"email": current_user})
+    user_id = user_res.scalar()
+    if not user_id:
+        raise HTTPException(status_code=404, detail="유저를 찾을 수 없습니다.")
+
+    # 💡 [핵심 UNION 쿼리]: SQL의 UNION 키워드는 교집합 영역을 데이터베이스단에서 자동으로 고속 중복 제거(De-duplication) 해줍니다.
+    query = text("""
+        SELECT exam_type, subject_snapshot AS subject 
+        FROM problem_solving_history 
+        WHERE user_id = :user_id
+        UNION
+        SELECT exam_type, subject 
+        FROM user_learning_progress 
+        WHERE user_id = :user_id
+        ORDER BY exam_type ASC, subject ASC;
+    """)
+
+    res = await db.execute(query, {"user_id": user_id})
+    rows = res.all()
+
+    # 학습 데이터가 한 건도 없다면 rows는 빈 리스트가 되므로 자동적으로 []가 리턴됩니다.
+    return [{"exam_type": r.exam_type, "subject": r.subject} for r in rows]
