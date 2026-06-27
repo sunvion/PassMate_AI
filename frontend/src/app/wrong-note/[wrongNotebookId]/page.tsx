@@ -230,7 +230,7 @@ export default function WrongNotebookDetailPage() {
                                             >
                                                 <div className="mb-3 flex items-center justify-between">
                                                     <span className="text-sm font-bold text-slate-900">
-                                                        문제 {index + 1}
+                                                        문제 {question.question_number ?? question.number ?? index + 1}
                                                     </span>
 
                                                     <span
@@ -382,13 +382,14 @@ export default function WrongNotebookDetailPage() {
                                                 value={chatInput}
                                                 onChange={(e) => setChatInput(e.target.value)}
                                                 onKeyDown={(e) => {
-                                                    if (e.key === "Enter") {
+                                                    if (e.key === "Enter" && !e.shiftKey) {
+                                                        e.preventDefault();
                                                         handleSendMessage();
                                                     }
                                                 }}
                                                 disabled={!selectedQuestion || isAiLoading}
                                                 placeholder="질문을 입력하세요..."
-                                                className="min-w-0 flex-1 rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-blue-500"
+                                                className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                                             />
 
                                             <button

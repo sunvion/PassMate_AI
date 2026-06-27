@@ -52,6 +52,8 @@ export async function deleteWrongNotebook(wrongNotebookId: number) {
 
 export type WrongNoteQuestion = {
   question_id: number;
+  question_number?: number;
+  number?: number;
   question: string;
   image_url?: string | null;
   options: {
@@ -74,11 +76,6 @@ export type WrongNotebookDetail = {
   items: WrongNoteQuestion[];
 };
 
-export type WrongNoteChatMessage = {
-  role: "user" | "assistant";
-  content: string;
-};
-
 export async function getWrongNotebookDetail(
   wrongNotebookId: number
 ): Promise<WrongNotebookDetail> {
@@ -96,22 +93,77 @@ export async function getWrongNotebookDetail(
   return res.json();
 }
 
+export type WrongNoteChatMessage = {
+  role: "user" | "assistant";
+  content: string;
+};
+
+type ChatRoomResponse = {
+  id: number;
+  user_id: number;
+  title: string;
+  created_at: string;
+};
+
+type ChatMessageResponse = {
+  id?: number;
+  role?: "user" | "assistant";
+  content?: string;
+  answer?: string;
+  message?: string;
+};
+
+// AI 질문 요청
 export async function askWrongNoteAI(params: {
   questionId: number;
   message: string;
 }): Promise<{ answer: string }> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/ai/wrong-note-chat`, {
+  // 1. 채팅방 생성
+  const roomRes = await fetch(`${API_BASE_URL}/api/v1/chatbot/rooms`, {
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify({
-      question_id: params.questionId,
-      message: params.message,
+      title: "오답노트 AI 테스트",
     }),
   });
 
-  if (!res.ok) {
+  if (!roomRes.ok) {
+    const errorText = await roomRes.text();
+
+    console.error("AI 채팅방 생성 실패 상태:", roomRes.status);
+    console.error("AI 채팅방 생성 실패 응답:", errorText);
+
+    throw new Error("AI 채팅방 생성 실패");
+  }
+
+  const room: ChatRoomResponse = await roomRes.json();
+
+  // 2. 생성된 채팅방에 질문 전송
+  const messageRes = await fetch(
+    `${API_BASE_URL}/api/v1/chatbot/rooms/${room.id}/messages`,
+    {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        content: params.message,
+        question_id: params.questionId,
+      }),
+    }
+  );
+
+  if (!messageRes.ok) {
     throw new Error("AI 질문 요청 실패");
   }
 
-  return res.json();
+  const data: ChatMessageResponse = await messageRes.json();
+
+  console.log("AI 응답:", data);
+
+  return {
+    answer:
+      data.answer ??
+      data.content ??
+      data.message ??
+      "AI 답변을 불러왔지만 응답 내용이 비어 있습니다.",
+  };
 }
