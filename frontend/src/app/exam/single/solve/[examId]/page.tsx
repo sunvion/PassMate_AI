@@ -22,6 +22,9 @@ export default function SingleSolvePage() {
   const year = searchParams.get("year") || "";
   const limit = searchParams.get("limit");
   const random = searchParams.get("random");
+  // 한 문제 씩 이어풀기
+  const isResume = searchParams.get("resume") === "true";
+  const lastQuestionId = Number(searchParams.get("last_question_id"));
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -98,6 +101,16 @@ export default function SingleSolvePage() {
           .sort((a: Question, b: Question) => a.number - b.number);
 
         setQuestions(formattedQuestions);
+
+        if (isResume && lastQuestionId) {
+          const resumeIndex = formattedQuestions.findIndex(
+            (question) => question.id === lastQuestionId
+          );
+
+          if (resumeIndex >= 0) {
+            setCurrentIndex(resumeIndex);
+          }
+        }
       } catch (error) {
         console.error(error);
         setErrorMessage("문제를 불러오지 못했습니다.");
@@ -113,7 +126,7 @@ export default function SingleSolvePage() {
     }
 
     fetchQuestions();
-  }, [examType, subject, year, limit, random]);
+  }, [examType, subject, year, limit, random, isResume, lastQuestionId]);
 
   const handleSelectChoice = (questionId: number, choiceNumber: number) => {
     if (checkedQuestions[questionId]) return;

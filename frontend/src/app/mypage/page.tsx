@@ -112,8 +112,9 @@ export default function MyPage() {
 
   const [histories, setHistories] = useState<HistoryDetail[]>([])
   const [wrongNotes, setWrongNotes] = useState<WrongNotebookSummary[]>([])
-  const [latestProgress, setLatestProgress] = useState<LatestProgress | null>(
-    null,
+  // 각 시험 별 이어풀기를 배열로 받음
+  const [latestProgressList, setLatestProgressList] = useState<LatestProgress[]>(
+    [],
   )
   const [isLoading, setIsLoading] = useState(true)
 
@@ -167,15 +168,15 @@ export default function MyPage() {
 
         if (progressRes.ok) {
           const progressData = await progressRes.json()
-          setLatestProgress(progressData)
+          setLatestProgressList(Array.isArray(progressData) ? progressData : [])
         } else {
-          setLatestProgress(null)
+          setLatestProgressList([])
         }
       } catch (error) {
         console.warn('학습 통계 데이터 조회 실패:', error)
         setHistories([])
         setWrongNotes([])
-        setLatestProgress(null)
+        setLatestProgressList([])
       } finally {
         setIsLoading(false)
       }
@@ -222,12 +223,13 @@ export default function MyPage() {
 
   const hasStudyData = !!latestHistory
 
-  const selectedProgress: LatestProgress | null =
-    latestProgress &&
-      latestProgress.exam_type === selectedExam.examType &&
-      (isSelectedDriverLicense || latestProgress.subject === selectedExam.subject)
-      ? latestProgress
-      : null
+  const selectedProgress =
+    latestProgressList.find(
+      (progress) =>
+        progress.exam_type === selectedExam.examType &&
+        (isSelectedDriverLicense ||
+          progress.subject === selectedExam.subject),
+    ) ?? null
 
   const hasLatestProgress = selectedProgress !== null
 
@@ -429,16 +431,24 @@ export default function MyPage() {
 
               <div className="mt-6 flex items-center justify-between rounded-2xl bg-blue-50 px-5 py-4">
                 <div>
-                  <p className="text-sm font-semibold text-slate-500">
-                    마지막 학습 위치
-                  </p>
-                  <p className="font-bold">
-                    {isSelectedDriverLicense
-                      ? '매번 새로운 랜덤 40문제로 학습합니다.'
-                      : hasLatestProgress
-                        ? `최근 학습일 ${getDateText(selectedProgress.updated_at)}`
-                        : '아직 저장된 학습 위치가 없습니다.'}
-                  </p>
+                  {isSelectedDriverLicense ? (
+                    <p className="font-bold">
+                      매번 새로운 랜덤 40문제로 학습합니다.
+                    </p>
+                  ) : hasLatestProgress ? (
+                    <>
+                      <p className="mt-1 text-sm font-semibold text-slate-500">
+                        최근 학습일
+                      </p>
+                      <p className="font-bold">
+                        {getDateText(selectedProgress.updated_at)}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="font-bold">
+                      아직 저장된 학습 위치가 없습니다.
+                    </p>
+                  )}
                 </div>
 
                 <button

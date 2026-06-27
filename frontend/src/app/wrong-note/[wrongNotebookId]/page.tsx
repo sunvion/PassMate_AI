@@ -254,7 +254,8 @@ export default function WrongNotebookDetailPage() {
 
                             <div className="grid grid-cols-12 gap-5">
                                 {/* 문제 상세: 넓게 */}
-                                <section className="col-span-8 rounded-2xl border border-slate-200 bg-white p-7">
+                                {/* 문제 상세 */}
+<section className="col-span-7 rounded-2xl border border-slate-200 bg-white p-7">
                                     <h2 className="mb-6 font-bold text-slate-900">문제 상세</h2>
 
                                     {!selectedQuestion ? (
@@ -334,7 +335,7 @@ export default function WrongNotebookDetailPage() {
                                 </section>
 
                                 {/* AI 튜터 */}
-                                <section className="col-span-4 rounded-2xl border border-slate-200 bg-white p-5">
+                                <section className="col-span-5 rounded-2xl border border-slate-200 bg-white p-5">
                                     <div className="mb-5 flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                             <Bot className="text-blue-600" size={22} />
@@ -353,7 +354,7 @@ export default function WrongNotebookDetailPage() {
 
                                     <div className="flex h-[680px] flex-col">
                                         <div className="flex-1 space-y-3 overflow-y-auto rounded-2xl bg-slate-50 p-4">
-                                            <div className="mr-10 rounded-2xl bg-white p-4 text-sm leading-6 text-slate-600 shadow-sm">
+                                            <div className="mr-4 rounded-2xl bg-white p-4 text-sm leading-7 text-slate-600 shadow-sm">
                                                 안녕하세요! 😊
                                                 <br />이 문제에 대해 궁금한 점을 물어보세요.
                                             </div>
@@ -361,9 +362,9 @@ export default function WrongNotebookDetailPage() {
                                             {chatMessages.map((message, index) => (
                                                 <div
                                                     key={index}
-                                                    className={`rounded-2xl p-4 text-sm leading-6 ${message.role === "user"
-                                                        ? "ml-10 bg-blue-600 text-white"
-                                                        : "mr-10 bg-white text-slate-700 shadow-sm"
+                                                    className={`rounded-2xl p-4 text-sm leading-7 whitespace-pre-line break-words ${message.role === "user"
+                                                            ? "ml-4 bg-blue-600 text-white"
+                                                            : "mr-4 bg-white text-slate-700 shadow-sm"
                                                         }`}
                                                 >
                                                     {message.content}

@@ -122,3 +122,37 @@ export async function saveLearningProgress(
 
   return res.json();
 }
+
+export type LatestProgress = {
+  exam_type: string;
+  subject: string;
+  year: number | null;
+  last_question_id: number;
+  solved_count: number;
+  total_count: number;
+  remaining_count: number;
+  progress_percent: number;
+  updated_at: string;
+};
+
+export async function getLatestProgress(): Promise<LatestProgress[]> {
+  const token = localStorage.getItem("token");
+
+  const res = await fetch(`${API_BASE_URL}/api/v1/statistics/latest-progress`, {
+    method: "GET",
+    mode: "cors",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error("최근 학습 진행 상태 조회 실패:", res.status, errorText);
+    throw new Error("최근 학습 진행 상태 조회 실패");
+  }
+
+  return res.json();
+}
