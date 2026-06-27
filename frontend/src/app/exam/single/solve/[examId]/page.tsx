@@ -10,7 +10,7 @@ import SolveHeader from "@/components/exams/SolveHeader";
 import QuestionCard from "@/components/exams/QuestionCard";
 import QuestionNavigator from "@/components/exams/QuestionNavigator";
 
-import { getExamQuestions, submitBulkAnswers, saveLearningProgress } from "@/lib/examApi";
+import { getExamQuestions, getResumeAttemptQuestions, submitBulkAnswers, saveLearningProgress } from "@/lib/examApi";
 import { Question, SelectedAnswers } from "@/types/exam";
 
 export default function SingleSolvePage() {
@@ -36,6 +36,8 @@ export default function SingleSolvePage() {
   const [saveMessage, setSaveMessage] = useState("");
 
   const currentQuestion = questions[currentIndex];
+
+  const attemptId = searchParams.get("attempt_id");
 
   const answeredCount = Object.keys(answers).length;
   const progressPercent =
@@ -73,13 +75,46 @@ export default function SingleSolvePage() {
         setIsLoading(true);
         setErrorMessage("");
 
-        const data = await getExamQuestions({
-          examType,
-          subject,
-          year: year || undefined,
-          limit: limit ? Number(limit) : undefined,
-          random: random === "true",
-        });
+        let data;
+
+        if (isResume && attemptId) {
+          // 이어풀기 정보(선택했던 답)
+          const resumeData = await getResumeAttemptQuestions(Number(attemptId));
+
+          // 기존 문제 정보(정답 포함)
+          const originalData = await getExamQuestions({
+            examType,
+            subject,
+            year: year || undefined,
+          });
+
+          // resume + 기존 문제를 id 기준으로 합침
+          const mergedQuestions = resumeData.questions.map((resumeQuestion: any) => {
+            const originalQuestion = originalData.questions.find(
+              (question) => question.id === resumeQuestion.id
+            );
+
+            return {
+              ...resumeQuestion,
+
+              // 기존 문제 API에서 정답 가져오기
+              answer: originalQuestion?.answer ?? [],
+            };
+          });
+
+          data = {
+            ...resumeData,
+            questions: mergedQuestions,
+          };
+        } else {
+          data = await getExamQuestions({
+            examType,
+            subject,
+            year: year || undefined,
+            limit: limit ? Number(limit) : undefined,
+            random: random === "true",
+          });
+        }
 
         const formattedQuestions = data.questions
           .map((q: any) => ({
@@ -91,6 +126,9 @@ export default function SingleSolvePage() {
             answer: Array.isArray(q.answer)
               ? q.answer.map(Number)
               : [Number(q.answer)],
+            selected_option: Array.isArray(q.selected_option)
+              ? q.selected_option.map(Number)
+              : [],
             choices: Object.entries(q.options ?? {}).map(([number, text]) => ({
               id: Number(number),
               number: Number(number),
@@ -101,6 +139,18 @@ export default function SingleSolvePage() {
           .sort((a: Question, b: Question) => a.number - b.number);
 
         setQuestions(formattedQuestions);
+
+        if (isResume) {
+          const restoredAnswers: SelectedAnswers = {};
+
+          formattedQuestions.forEach((question: any) => {
+            if (question.selected_option?.length > 0) {
+              restoredAnswers[question.id] = question.selected_option[0];
+            }
+          });
+
+          setAnswers(restoredAnswers);
+        }
 
         if (isResume && lastQuestionId) {
           const resumeIndex = formattedQuestions.findIndex(
@@ -126,7 +176,7 @@ export default function SingleSolvePage() {
     }
 
     fetchQuestions();
-  }, [examType, subject, year, limit, random, isResume, lastQuestionId]);
+  }, [examType, subject, year, limit, random, isResume, lastQuestionId, attemptId]);
 
   const handleSelectChoice = (questionId: number, choiceNumber: number) => {
     if (checkedQuestions[questionId]) return;

@@ -156,3 +156,33 @@ export async function getLatestProgress(): Promise<LatestProgress[]> {
 
   return res.json();
 }
+
+export async function getResumeAttemptQuestions(
+  attemptId: number
+): Promise<ExamQuestionsResponse> {
+  const token = localStorage.getItem("token");
+
+  const res = await fetch(`${API_BASE_URL}/api/v1/attempts/${attemptId}/resume`, {
+    method: "GET",
+    mode: "cors",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error("이어풀기 문제 조회 실패:", res.status, errorText);
+    throw new Error("이어풀기 문제를 불러오지 못했습니다.");
+  }
+
+  const data = await res.json();
+
+  return {
+    examId: attemptId,
+    title: data.title ?? "이어풀기",
+    questions: data.questions ?? data,
+  };
+}

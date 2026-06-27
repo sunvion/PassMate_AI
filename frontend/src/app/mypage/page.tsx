@@ -25,6 +25,11 @@ type ExamOption = {
   totalBankQuestions: number
 }
 
+type LearnedDomain = {
+  exam_type: string
+  subject: string
+}
+
 type HistoryDetail = {
   id?: number
   attempt_id?: number
@@ -50,6 +55,9 @@ type WrongNotebookSummary = {
 }
 
 type LatestProgress = {
+  // 이어풀기 API 호출에 필요한 값
+  attempt_id: number
+
   exam_id?: number
   exam_type: string
   subject: string
@@ -62,26 +70,34 @@ type LatestProgress = {
   updated_at: string
 }
 
-const examOptions: ExamOption[] = [
-  {
-    label: '국가직 9급 컴퓨터일반',
-    examType: 'CS_GENERAL',
-    subject: '컴퓨터일반',
-    totalBankQuestions: 140,
-  },
-  {
-    label: '지방직 9급 컴퓨터일반',
-    examType: 'CS_LOCAL',
-    subject: '컴퓨터일반',
-    totalBankQuestions: 140,
-  },
-  {
-    label: '운전면허 필기',
-    examType: 'DRIVERS_LICENSE_1',
-    subject: '운전면허 필기',
-    totalBankQuestions: 500,
-  },
-]
+function isDriverLicenseExam(examType?: string) {
+  return (
+    examType?.startsWith('DRIVERS_LICENSE') ||
+    examType?.startsWith('DRIVING_LICENSE')
+  )
+}
+
+function getTotalBankQuestions(examType: string) {
+  if (isDriverLicenseExam(examType)) {
+    return 500
+  }
+
+  return 140
+}
+
+function getExamLabel(examType: string, subject: string) {
+  switch (examType) {
+    case 'CS_GENERAL':
+      return `국가직 9급 ${subject}`
+    case 'CS_LOCAL':
+      return `지방직 9급 ${subject}`
+    case 'DRIVERS_LICENSE_1':
+    case 'DRIVERS_LICENSE_2':
+      return '운전면허 필기'
+    default:
+      return `${examType} ${subject}`
+  }
+}
 
 function getExamTypeLabel(examType: string) {
   switch (examType) {
@@ -112,14 +128,23 @@ export default function MyPage() {
 
   const [histories, setHistories] = useState<HistoryDetail[]>([])
   const [wrongNotes, setWrongNotes] = useState<WrongNotebookSummary[]>([])
-  // 각 시험 별 이어풀기를 배열로 받음
-  const [latestProgressList, setLatestProgressList] = useState<LatestProgress[]>(
-    [],
-  )
+
+  // 한 문제씩 학습 진행 상태 목록
+  const [latestProgressList, setLatestProgressList] = useState<LatestProgress[]>([])
+  const [learnedDomains, setLearnedDomains] = useState<LearnedDomain[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
-  const selectedExam = examOptions[selectedExamIndex]
-  const isSelectedDriverLicense = selectedExam.examType.startsWith('DRIVERS_LICENSE')
+  const dynamicExamOptions: ExamOption[] = learnedDomains.map((domain) => ({
+    label: getExamLabel(domain.exam_type, domain.subject),
+    examType: domain.exam_type,
+    subject: domain.subject,
+    totalBankQuestions: getTotalBankQuestions(domain.exam_type),
+  }))
+
+  const examSelectOptions = dynamicExamOptions
+  const selectedExam = examSelectOptions[selectedExamIndex]
+  const isSelectedDriverLicense =
+    isDriverLicenseExam(selectedExam?.examType)
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -134,23 +159,30 @@ export default function MyPage() {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         }
 
-        const [historyRes, wrongNoteRes, progressRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/api/v1/statistics/history-details`, {
-            method: 'GET',
-            headers,
-            cache: 'no-store',
-          }),
-          fetch(`${API_BASE_URL}/api/v1/wrong-notebooks`, {
-            method: 'GET',
-            headers,
-            cache: 'no-store',
-          }),
-          fetch(`${API_BASE_URL}/api/v1/statistics/latest-progress`, {
-            method: 'GET',
-            headers,
-            cache: 'no-store',
-          }),
-        ])
+        // 마이페이지에서 필요한 데이터 3개를 한 번에 조회
+        const [historyRes, wrongNoteRes, progressRes, learnedDomainRes] =
+          await Promise.all([
+            fetch(`${API_BASE_URL}/api/v1/statistics/history-details`, {
+              method: 'GET',
+              headers,
+              cache: 'no-store',
+            }),
+            fetch(`${API_BASE_URL}/api/v1/wrong-notebooks`, {
+              method: 'GET',
+              headers,
+              cache: 'no-store',
+            }),
+            fetch(`${API_BASE_URL}/api/v1/statistics/latest-progress`, {
+              method: 'GET',
+              headers,
+              cache: 'no-store',
+            }),
+            fetch(`${API_BASE_URL}/api/v1/statistics/learned-domains`, {
+              method: 'GET',
+              headers,
+              cache: 'no-store',
+            }),
+          ])
 
         if (historyRes.ok) {
           const historyData = await historyRes.json()
@@ -172,25 +204,39 @@ export default function MyPage() {
         } else {
           setLatestProgressList([])
         }
+
+        if (learnedDomainRes.ok) {
+          const learnedDomainData = await learnedDomainRes.json()
+          setLearnedDomains(Array.isArray(learnedDomainData) ? learnedDomainData : [])
+        } else {
+          setLearnedDomains([])
+        }
       } catch (error) {
         console.warn('학습 통계 데이터 조회 실패:', error)
         setHistories([])
         setWrongNotes([])
         setLatestProgressList([])
+        setLearnedDomains([])
       } finally {
         setIsLoading(false)
       }
     }
-
     fetchDashboardData()
   }, [])
 
+  useEffect(() => {
+    if (selectedExamIndex >= examSelectOptions.length) {
+      setSelectedExamIndex(0)
+    }
+  }, [examSelectOptions.length, selectedExamIndex])
+
   const filteredHistories = useMemo(() => {
+    if (!selectedExam) return []
     return histories
       .filter((history) => {
         const examMatched = history.exam_type === selectedExam.examType
 
-        const subjectMatched = selectedExam.examType.startsWith('DRIVERS_LICENSE')
+        const subjectMatched = isDriverLicenseExam(selectedExam.examType)
           ? true
           : history.subject === selectedExam.subject
 
@@ -204,11 +250,13 @@ export default function MyPage() {
   }, [histories, selectedExam])
 
   const filteredWrongNotes = useMemo(() => {
+    if (!selectedExam) return []
+
     return wrongNotes
       .filter((note) => {
         const examMatched = note.exam_type === selectedExam.examType
 
-        const subjectMatched = selectedExam.examType.startsWith('DRIVERS_LICENSE')
+        const subjectMatched = isDriverLicenseExam(selectedExam.examType)
           ? true
           : note.subject === selectedExam.subject
 
@@ -223,18 +271,19 @@ export default function MyPage() {
 
   const hasStudyData = !!latestHistory
 
-  const selectedProgress =
-    latestProgressList.find(
+  const selectedProgress = selectedExam
+    ? latestProgressList.find(
       (progress) =>
         progress.exam_type === selectedExam.examType &&
         (isSelectedDriverLicense ||
           progress.subject === selectedExam.subject),
     ) ?? null
+    : null
 
   const hasLatestProgress = selectedProgress !== null
 
   const progressTotalCount =
-    selectedProgress?.total_count ?? selectedExam.totalBankQuestions ?? 20
+    selectedProgress?.total_count ?? selectedExam?.totalBankQuestions ?? 20
 
   const progressSolvedCount = selectedProgress?.solved_count ?? 0
 
@@ -287,7 +336,14 @@ export default function MyPage() {
       const params = new URLSearchParams({
         exam_type: selectedProgress.exam_type,
         subject: selectedProgress.subject,
+
+        // 이어풀기 모드 여부
         resume: 'true',
+
+        // 백엔드 resume API 호출에 필요한 id
+        attempt_id: String(selectedProgress.attempt_id),
+
+        // 이어서 보여줄 문제 위치
         last_question_id: String(selectedProgress.last_question_id),
       })
 
@@ -295,9 +351,9 @@ export default function MyPage() {
         params.set('year', String(selectedProgress.year))
       }
 
+      // attempt_id를 solve 페이지로 넘겨서 selected_option을 복원하게 함
       router.push(
-        `/exam/single/solve/${selectedProgress.exam_id ?? selectedProgress.last_question_id
-        }?${params.toString()}`,
+        `/exam/single/solve/${selectedProgress.attempt_id}?${params.toString()}`,
       )
       return
     }
@@ -343,7 +399,9 @@ export default function MyPage() {
                 onClick={() => setIsSubjectOpen(!isSubjectOpen)}
                 className="flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-5 py-4 text-left shadow-sm transition hover:border-blue-200 hover:shadow-md"
               >
-                <span className="font-bold">{selectedExam.label}</span>
+                <span className="font-bold">
+                  {selectedExam?.label ?? '학습한 시험이 없어요'}
+                </span>
 
                 <ChevronDown
                   size={20}
@@ -354,7 +412,7 @@ export default function MyPage() {
 
               {isSubjectOpen && (
                 <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg">
-                  {examOptions.map((exam, index) => (
+                  {examSelectOptions.map((exam, index) => (
                     <button
                       key={exam.label}
                       onClick={() => {
@@ -403,7 +461,7 @@ export default function MyPage() {
                       ? `${selectedProgress!.year ?? ''} ${getExamTypeLabel(
                         selectedProgress!.exam_type,
                       )} ${selectedProgress!.subject}`
-                      : selectedExam.label}
+                      : selectedExam?.label ?? '학습 기록 없음'}
                   </p>
 
                   <p className="mt-2 text-3xl font-black">
