@@ -19,7 +19,7 @@ async def create_new_room(db: AsyncSession, user_id: int, room_in: ChatRoomCreat
     # 1. 방 레코드 기본 생성 및 문제 ID 바인딩
     room = await chatbot_crud.create_chat_room(db=db, user_id=user_id, room_in=room_in)
     
-    # 2. 🎯 과목군을 역추적하여 첫 인사말(웰컴 메시지) 동적 커스텀 적재
+    # 2. 과목군을 역추적하여 첫 인사말(웰컴 메시지) 동적 커스텀 적재
     welcome_content = "안녕하세요! 해당 문항에 대해 궁금한 점을 편하게 물어보세요. 보기 분석이나 핵심 개념을 1:1로 가르쳐 드립니다! 😊"
     
     if room_in.question_id:
@@ -31,6 +31,7 @@ async def create_new_room(db: AsyncSession, user_id: int, room_in: ChatRoomCreat
                 welcome_content = f"안녕하세요! 🚗 **운전면허** 전문 AI 강사입니다. {q_obj.number}번 문제에 대해서 무엇이든 대답해드릴게요. 무엇이 궁금하신가요?"
 
     # 3. 챗봇이 열리자마자 띄워줄 인사말을 assistant 역할로 DB에 즉시 캐시 저장
+    # ⚠️ 이 내부의 commit 때문에 상단의 'room' 객체 속성들이 만료(Expire)됩니다.
     await chatbot_crud.insert_chat_message(
         db=db,
         room_id=room.id,
@@ -38,6 +39,12 @@ async def create_new_room(db: AsyncSession, user_id: int, room_in: ChatRoomCreat
         content=welcome_content,
         question_id=room_in.question_id
     )
+    
+    # =================================================================
+    # 🌟 [🌟 핵심 버그 수정]: 만료된 room 객체의 속성들을 비동기로 안전하게 새로고침합니다.
+    # =================================================================
+    await db.refresh(room)
+    
     return room
 
 
