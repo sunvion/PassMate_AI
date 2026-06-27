@@ -75,41 +75,89 @@ async def read_latest_progress(
     db: AsyncSession = Depends(get_db)
 ):
     """
-    🎯 [고도화 반영 스펙]
-    유저가 한 문제씩 풀기 도중 페이지를 이탈했을 때, 가장 최근에 업데이트된 과목 진도 명세를 1건 추출합니다.
-    프론트엔드 요구사항에 맞춰 이어서 풀기 서클용 attempt_id와 남은 문제수 연산용 total_count를 결합 반환합니다.
+    🎯 [시험별/과목별 최신 진도 리스트 추출 분기 개정 완료]
+    절대적 최신 1개(LIMIT 1)가 아닌, 사용자가 응시한 모든 시험(직렬)/과목별 최신 상태를 
+    각각 1개씩 리스트(Array) 포맷으로 일괄 반환하도록 구조를 고도화했습니다.
     """
     user_res = await db.execute(text("SELECT id FROM users WHERE email = :email"), {"email": current_user})
     user_id = user_res.scalar()
     if not user_id:
         raise HTTPException(status_code=404, detail="유저를 찾을 수 없습니다.")
     
-    # 💡 [집계 쿼리 융합]: 대시보드 진도 카드를 완벽히 그릴 수 있도록 메인 테이블 PK(id) 및 원본 문항 총합 수를 서브쿼리로 일괄 소싱합니다.
-    query = text("""
-        SELECT ulp.id, ulp.exam_type, ulp.subject, ulp.year, ulp.last_question_id, ulp.solved_count, ulp.updated_at,
-               (SELECT COUNT(*) FROM questions q WHERE q.exam_type = ulp.exam_type AND q.subject = ulp.subject AND COALESCE(q.year, 0) = ulp.year) as total_count
-        FROM user_learning_progress ulp
-        WHERE ulp.user_id = :user_id
-        ORDER BY ulp.updated_at DESC
-        LIMIT 1
-    """)
-    res = await db.execute(query, {"user_id": user_id})
-    row = res.first()
-    
-    if not row:
-        return None 
+    # 하위 호환성 가드: 현재 가동 중인 프론트 컴퓨터 DB에 'year' 컬럼이 실제로 생성되어 있는지 체크
+    column_check = await db.execute(text("""
+        SELECT EXISTS (
+            SELECT 1 FROM information_schema.columns 
+            WHERE table_name = 'user_learning_progress' AND column_name = 'year'
+        )
+    """))
+    has_year_column = column_check.scalar()
+
+    if has_year_column:
+        # 🅰️ [최신 스키마 버전]: DISTINCT ON을 통해 시험 종류 및 과목별 최신 스냅샷 한 행씩 분리 추출
+        query = text("""
+            WITH latest_progress AS (
+                SELECT DISTINCT ON (ulp.exam_type, ulp.subject)
+                    ulp.id, ulp.exam_type, ulp.subject, ulp.year, ulp.last_question_id, ulp.solved_count, ulp.updated_at,
+                    (SELECT COUNT(*) FROM questions q 
+                        WHERE q.exam_type = ulp.exam_type 
+                        AND q.subject = ulp.subject 
+                        AND COALESCE(q.year, 0) = ulp.year) as total_count
+                FROM user_learning_progress ulp
+                WHERE ulp.user_id = :user_id 
+                     AND ulp.exam_type != 'DRIVERS_LICENSE_1'  -- 운전면허 데이터는 조회 대상에서 생략
+                ORDER BY ulp.exam_type, ulp.subject, ulp.updated_at DESC
+            )
+            SELECT * FROM latest_progress ORDER BY updated_at DESC;
+        """)
+        res = await db.execute(query, {"user_id": user_id})
+        rows = res.all()
         
-    return {
-        "attempt_id": row.id,              # 🆕 프론트엔드가 '이어서 풀기 복원 API' 호출 시 주입할 세션 식별 고유키
-        "exam_type": row.exam_type,
-        "subject": row.subject,
-        "year": None if row.year == 0 else row.year,
-        "exam_id": row.year,               # 🆕 프론트엔드가 라우팅 및 기출 세션 식별을 위해 요청한 바인딩 규격
-        "last_question_id": row.last_question_id,
-        "solved_count": row.solved_count,
-        "total_count": row.total_count,    # 🆕 프론트엔드가 진행률(solved / total) 및 남은 문항 출력을 위해 요청한 수치
-        "updated_at": row.updated_at
-    }
+        return [
+            {
+                "attempt_id": row.id,
+                "exam_type": row.exam_type,
+                "subject": row.subject,
+                "year": None if row.year == 0 else row.year,
+                "exam_id": row.year,
+                "last_question_id": row.last_question_id,
+                "solved_count": row.solved_count,
+                "total_count": row.total_count,
+                "updated_at": row.updated_at
+            }
+            for row in rows
+        ]
+    else:
+        # 🅱️ [옛날 스키마 보존 버전]: year 컬럼 조회를 배제하고 exam_type, subject 별 최신 상태 병렬 추출
+        query = text("""
+            WITH latest_progress AS (
+                SELECT DISTINCT ON (ulp.exam_type, ulp.subject)
+                       ulp.id, ulp.exam_type, ulp.subject, ulp.last_question_id, ulp.solved_count, ulp.updated_at,
+                       (SELECT COUNT(*) FROM questions q WHERE q.exam_type = ulp.exam_type AND q.subject = ulp.subject) as total_count
+                FROM user_learning_progress ulp
+                WHERE ulp.user_id = :user_id
+                     AND ulp.exam_type != 'DRIVERS_LICENSE_1'
+                ORDER BY ulp.exam_type, ulp.subject, ulp.updated_at DESC
+            )
+            SELECT * FROM latest_progress ORDER BY updated_at DESC;
+        """)
+        res = await db.execute(query, {"user_id": user_id})
+        rows = res.all()
+        
+        return [
+            {
+                "attempt_id": row.id,
+                "exam_type": row.exam_type,
+                "subject": row.subject,
+                "year": None,
+                "exam_id": 0,
+                "last_question_id": row.last_question_id,
+                "solved_count": row.solved_count,
+                "total_count": row.total_count,
+                "updated_at": row.updated_at
+            }
+            for row in rows
+        ]
 
 
 @router.get("/chapters", response_model=List[ChapterWrongCountResponse], summary="챕터별 오답 개수 집계 조회")

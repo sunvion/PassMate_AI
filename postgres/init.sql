@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS wrong_notebook_items (
     submitted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- 7. 💡 [병합 교정]: 두 번 쪼개져 선언되어 있던 학습 진행 테이블을 최종 확장 스펙으로 완전 병합
+-- 7. 💡 학습 진행 테이블
 CREATE TABLE IF NOT EXISTS user_learning_progress (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,

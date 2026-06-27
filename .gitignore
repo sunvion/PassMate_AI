@@ -19,6 +19,7 @@ yarn-error.log*
 .env.development.local
 .env.test.local
 .env.production.local
+*.zip
 
 # Database backups
 pass_cert_backup.sql
@@ -28,3 +29,5 @@ backend/__pycache__/
 backend/.pytest_cache/
 **/__pycache__/
 *.pyc
+
+
