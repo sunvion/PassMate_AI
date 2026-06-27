@@ -101,6 +101,7 @@ export type WrongNoteChatMessage = {
 type ChatRoomResponse = {
   id: number;
   user_id: number;
+  question_id?: number | null;
   title: string;
   created_at: string;
 };
@@ -124,6 +125,7 @@ export async function askWrongNoteAI(params: {
     headers: getAuthHeaders(),
     body: JSON.stringify({
       title: "오답노트 AI 테스트",
+      question_id: params.questionId,
     }),
   });
 
