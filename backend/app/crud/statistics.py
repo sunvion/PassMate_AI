@@ -236,7 +236,7 @@ class CRUDStatistics:
                 "explanation": r.explanation, 
                 "image_url": r.image_url,
                 "submitted_at": r.submitted_at,
-                "chat_room_id": r.chat_room_id  -- 🎯 [스키마 싱크 완료]: 존재 시 방 ID 정수값, 미개설 시 null 할당
+                "chat_room_id": r.chat_room_id  # 🎯 [스키마 싱크 완료]: 존재 시 방 ID 정수값, 미개설 시 null 할당
             })
         return {
             "id": nb_row.id, 
