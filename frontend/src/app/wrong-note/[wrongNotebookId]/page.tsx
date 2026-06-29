@@ -5,6 +5,7 @@ import Sidebar from "@/components/Sidebar";
 import {
     askWrongNoteAI,
     getWrongNotebookDetail,
+    getWrongNoteChatMessages,
     WrongNotebookDetail,
     WrongNoteChatMessage,
     WrongNoteQuestion,
@@ -12,6 +13,15 @@ import {
 import { Bot, Loader2, RotateCcw, Send } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+
+//LLM 마크업 반영
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+
+//홈페이지 애니메이션
+import { motion, useScroll, useTransform } from "framer-motion";
+import Image from "next/image";
+import { useRef } from "react";
 
 function getExamTypeLabel(examType: string) {
     switch (examType) {
@@ -70,6 +80,9 @@ export default function WrongNotebookDetailPage() {
 
             try {
                 const data = await getWrongNotebookDetail(wrongNotebookId);
+
+                console.log(data);
+
                 const items = data.items ?? [];
 
                 setNotebook({ ...data, items });
@@ -84,6 +97,34 @@ export default function WrongNotebookDetailPage() {
 
         fetchDetail();
     }, [wrongNotebookId]);
+
+    // ai 채팅방 유지
+    useEffect(() => {
+        async function fetchChatMessages() {
+            if (!selectedQuestion) return;
+
+            const roomId =
+                selectedQuestion.chat_room_id ?? selectedQuestion.room_id;
+
+            console.log("selectedQuestion:", selectedQuestion);
+            console.log("roomId:", roomId);
+
+            if (!roomId) return;
+
+            try {
+                const messages = await getWrongNoteChatMessages(roomId);
+
+                setChatHistory((prev) => ({
+                    ...prev,
+                    [selectedQuestion.question_id]: messages,
+                }));
+            } catch (error) {
+                console.error("AI 대화 이력 조회 실패:", error);
+            }
+        }
+
+        fetchChatMessages();
+    }, [selectedQuestion]);
 
     const handleSelectQuestion = (question: WrongNoteQuestion) => {
         setSelectedQuestion(question);
@@ -125,11 +166,13 @@ export default function WrongNotebookDetailPage() {
             const result = await askWrongNoteAI({
                 questionId,
                 message,
+                roomId: selectedQuestion.chat_room_id ?? selectedQuestion.room_id,
             });
 
             const aiMessage: WrongNoteChatMessage = {
                 role: "assistant",
                 content: result.answer,
+                question_id: questionId,
             };
 
             setChatHistory((prev) => ({
@@ -255,7 +298,7 @@ export default function WrongNotebookDetailPage() {
                             <div className="grid grid-cols-12 gap-5">
                                 {/* 문제 상세: 넓게 */}
                                 {/* 문제 상세 */}
-<section className="col-span-7 rounded-2xl border border-slate-200 bg-white p-7">
+                                <section className="col-span-7 rounded-2xl border border-slate-200 bg-white p-7">
                                     <h2 className="mb-6 font-bold text-slate-900">문제 상세</h2>
 
                                     {!selectedQuestion ? (
@@ -362,12 +405,40 @@ export default function WrongNotebookDetailPage() {
                                             {chatMessages.map((message, index) => (
                                                 <div
                                                     key={index}
-                                                    className={`rounded-2xl p-4 text-sm leading-7 whitespace-pre-line break-words ${message.role === "user"
-                                                            ? "ml-4 bg-blue-600 text-white"
-                                                            : "mr-4 bg-white text-slate-700 shadow-sm"
+                                                    className={`rounded-2xl p-4 text-sm leading-7 break-words ${message.role === "user"
+                                                        ? "ml-4 bg-blue-600 text-white whitespace-pre-line"
+                                                        : "mr-4 bg-white text-slate-700 shadow-sm"
                                                         }`}
                                                 >
-                                                    {message.content}
+                                                    {message.role === "assistant" ? (
+                                                        <ReactMarkdown
+                                                            remarkPlugins={[remarkGfm]}
+                                                            components={{
+                                                                h3: ({ children }) => (
+                                                                    <h3 className="mt-3 mb-2 text-base font-bold text-slate-900">
+                                                                        {children}
+                                                                    </h3>
+                                                                ),
+                                                                strong: ({ children }) => (
+                                                                    <strong className="font-bold text-slate-900">{children}</strong>
+                                                                ),
+                                                                p: ({ children }) => (
+                                                                    <p className="mb-2 leading-7 text-slate-700">{children}</p>
+                                                                ),
+                                                                ul: ({ children }) => (
+                                                                    <ul className="mb-2 list-disc pl-5 text-slate-700">{children}</ul>
+                                                                ),
+                                                                ol: ({ children }) => (
+                                                                    <ol className="mb-2 list-decimal pl-5 text-slate-700">{children}</ol>
+                                                                ),
+                                                                li: ({ children }) => <li className="mb-1">{children}</li>,
+                                                            }}
+                                                        >
+                                                            {message.content}
+                                                        </ReactMarkdown>
+                                                    ) : (
+                                                        message.content
+                                                    )}
                                                 </div>
                                             ))}
 

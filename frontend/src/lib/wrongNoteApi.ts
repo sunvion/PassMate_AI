@@ -52,6 +52,8 @@ export async function deleteWrongNotebook(wrongNotebookId: number) {
 
 export type WrongNoteQuestion = {
   question_id: number;
+  room_id?: number | null;
+  chat_room_id?: number | null;
   question_number?: number;
   number?: number;
   question: string;
@@ -94,8 +96,12 @@ export async function getWrongNotebookDetail(
 }
 
 export type WrongNoteChatMessage = {
+  id?: number;
+  room_id?: number;
+  question_id?: number;
   role: "user" | "assistant";
   content: string;
+  created_at?: string;
 };
 
 type ChatRoomResponse = {
@@ -118,31 +124,37 @@ type ChatMessageResponse = {
 export async function askWrongNoteAI(params: {
   questionId: number;
   message: string;
-}): Promise<{ answer: string }> {
-  // 1. 채팅방 생성
-  const roomRes = await fetch(`${API_BASE_URL}/api/v1/chatbot/rooms`, {
-    method: "POST",
-    headers: getAuthHeaders(),
-    body: JSON.stringify({
-      title: "오답노트 AI 테스트",
-      question_id: params.questionId,
-    }),
-  });
+  roomId?: number | null;
+}): Promise<{ answer: string; roomId: number }> {
+  let roomId = params.roomId;
 
-  if (!roomRes.ok) {
-    const errorText = await roomRes.text();
+  // 기존 채팅방이 없을 때만 새로 생성
+  if (!roomId) {
+    const roomRes = await fetch(`${API_BASE_URL}/api/v1/chatbot/rooms`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        title: "오답노트 AI 테스트",
+        question_id: params.questionId,
+      }),
+    });
 
-    console.error("AI 채팅방 생성 실패 상태:", roomRes.status);
-    console.error("AI 채팅방 생성 실패 응답:", errorText);
+    if (!roomRes.ok) {
+      const errorText = await roomRes.text();
 
-    throw new Error("AI 채팅방 생성 실패");
+      console.error("AI 채팅방 생성 실패 상태:", roomRes.status);
+      console.error("AI 채팅방 생성 실패 응답:", errorText);
+
+      throw new Error("AI 채팅방 생성 실패");
+    }
+
+    const room: ChatRoomResponse = await roomRes.json();
+    roomId = room.id;
   }
 
-  const room: ChatRoomResponse = await roomRes.json();
-
-  // 2. 생성된 채팅방에 질문 전송
+  // 기존 채팅방 또는 새로 만든 채팅방에 질문 전송
   const messageRes = await fetch(
-    `${API_BASE_URL}/api/v1/chatbot/rooms/${room.id}/messages`,
+    `${API_BASE_URL}/api/v1/chatbot/rooms/${roomId}/messages`,
     {
       method: "POST",
       headers: getAuthHeaders(),
@@ -162,10 +174,29 @@ export async function askWrongNoteAI(params: {
   console.log("AI 응답:", data);
 
   return {
+    roomId,
     answer:
       data.answer ??
       data.content ??
       data.message ??
       "AI 답변을 불러왔지만 응답 내용이 비어 있습니다.",
   };
+}
+
+//채팅방 기록 유지
+export async function getWrongNoteChatMessages(
+  roomId: number
+): Promise<WrongNoteChatMessage[]> {
+  const res = await fetch(
+    `${API_BASE_URL}/api/v1/chatbot/rooms/${roomId}/messages`,
+    {
+      headers: getAuthHeaders(),
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error("AI 대화 이력 조회 실패");
+  }
+
+  return res.json();
 }

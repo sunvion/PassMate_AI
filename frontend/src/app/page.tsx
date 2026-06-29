@@ -90,7 +90,7 @@ export default function HomePage() {
           <AnalysisStepCard
             number="1"
             title="문제 풀이"
-            subtitle="2024 국가직 9급"
+            subtitle="2026 국가직 9급"
           >
             <div className="mt-6 space-y-4">
               <SkeletonLine />
@@ -153,10 +153,50 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="mt-7 space-y-3">
-              <WeakBar label="운영체제" percent="82%" />
-              <WeakBar label="데이터베이스" percent="64%" />
-              <WeakBar label="네트워크" percent="45%" />
+            <div className="mt-7 rounded-2xl bg-blue-50 px-5 py-4">
+              <div className="mb-3 flex items-center justify-between">
+                <p className="text-sm font-black text-slate-700">최근 점수 추세</p>
+                <p className="text-xs font-bold text-blue-600">72점 → 82점</p>
+              </div>
+
+              <svg viewBox="0 0 320 95" className="h-24 w-full overflow-visible">
+                <polyline
+                  points="20,68 95,55 170,42 245,32 300,24"
+                  fill="none"
+                  stroke="#2563eb"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+
+                {[
+                  { x: 20, y: 68, score: 45 },
+                  { x: 95, y: 55, score: 58 },
+                  { x: 170, y: 42, score: 64 },
+                  { x: 245, y: 32, score: 75 },
+                  { x: 300, y: 24, score: 82 },
+                ].map((point) => (
+                  <g key={point.score}>
+                    <circle cx={point.x} cy={point.y} r="5" fill="#2563eb" />
+                    <circle
+                      cx={point.x}
+                      cy={point.y}
+                      r="9"
+                      fill="#2563eb"
+                      opacity="0.15"
+                    />
+
+                    <text
+                      x={point.x}
+                      y={point.y - 10}
+                      textAnchor="middle"
+                      className="fill-blue-700 text-[10px] font-black"
+                    >
+                      {point.score}
+                    </text>
+                  </g>
+                ))}
+              </svg>
             </div>
           </AnalysisStepCard>
 
@@ -172,7 +212,7 @@ export default function HomePage() {
                 오답노트 생성 완료
               </p>
               <h3 className="mt-2 text-xl font-extrabold text-slate-900">
-                2024 컴퓨터일반 오답
+                2026 컴퓨터일반 오답
               </h3>
 
               <div className="mt-5 grid grid-cols-2 gap-3">
@@ -185,15 +225,11 @@ export default function HomePage() {
                   <p className="text-sm text-slate-500">맞은 문제</p>
                 </div>
               </div>
-            </div>
-
-            <div className="mt-5 rounded-2xl bg-blue-600 p-5 text-white">
-              <p className="text-sm font-semibold text-blue-100">
-                추천 복습
-              </p>
-              <p className="mt-1 text-xl font-extrabold">
-                네트워크 과목 복습
-              </p>
+              <button
+                className="mt-10 w-full rounded-2xl bg-blue-600 p-5 text-left text-xl font-extrabold text-white"
+              >
+                AI 에게 질문하기 →
+              </button>
             </div>
           </AnalysisStepCard>
         </div>
@@ -208,13 +244,13 @@ export default function HomePage() {
             </span>
 
             <h2 className="mb-6 text-4xl font-extrabold leading-tight">
-              해설을 읽어도 모르겠다면,
+              틀린 이유를 모르겠다면,
               <br />
               AI에게 바로 물어보세요
             </h2>
 
             <p className="mb-8 text-lg leading-8 text-slate-600">
-              단순 정답 확인에서 끝나지 않고, 왜 틀렸는지와<br /> 
+              단순 정답 확인에서 끝나지 않고, 왜 틀렸는지와<br />
               어떤 개념을 다시 봐야 하는지
               대화형으로 학습할 수 있습니다.
             </p>
@@ -222,7 +258,6 @@ export default function HomePage() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <AIPointCard title="오답 이유" desc="왜 틀렸는지 설명" />
               <AIPointCard title="개념 정리" desc="핵심 개념 요약" />
-              <AIPointCard title="추가 학습" desc="비슷한 문제 연결" />
             </div>
           </div>
 
@@ -244,7 +279,7 @@ export default function HomePage() {
             <div className="space-y-5">
               <div className="flex justify-end">
                 <div className="max-w-sm rounded-2xl bg-purple-500 px-5 py-3 text-white">
-                  이 선택지가 왜 오답인가요?
+                  6번 문제 답이 왜 1번이야?
                 </div>
               </div>
 
@@ -253,22 +288,25 @@ export default function HomePage() {
                   AI 해설
                 </p>
                 <p className="leading-8 text-slate-700">
-                  좋은 질문이에요. <br />
-                  이 선택지는 문제에서 요구한 조건을 만족하지 못해서
-                  오답입니다. <br />
-                  정답 선택지는 핵심 개념의 기준을 정확히 포함하고 있어요.
+                  1번은 문제에서 요구한 조건을 가장 정확하게 만족하는 선택지예요.
+                  <br />
+                  반면 다른 선택지는 핵심 조건이 빠져 있거나, 설명 범위가 문제의 기준과 맞지 않아요.
+                  <br />
+                  따라서 문제의 키워드를 먼저 확인한 뒤 선택지의 조건과 비교하면 정답을 더 쉽게 찾을 수 있어요.
                 </p>
               </div>
 
-              <div className="max-w-lg rounded-3xl bg-blue-50 p-5">
-                <p className="mb-3 text-sm font-bold text-blue-600">
-                  핵심 개념 정리
-                </p>
-                <ol className="space-y-2 text-slate-700">
-                  <li>1. 문제의 조건을 먼저 확인합니다.</li>
-                  <li>2. 선택지의 핵심 키워드를 비교합니다.</li>
-                  <li>3. 조건과 맞지 않는 선택지를 제거합니다.</li>
-                </ol>
+              <div className="mt-6 flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3">
+                <input
+                  type="text"
+                  placeholder="질문을 입력하세요..."
+                  className="flex-1 bg-transparent px-3 py-2 text-sm outline-none placeholder:text-slate-400"
+                  readOnly
+                />
+
+                <button className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white">
+                  ✈
+                </button>
               </div>
             </div>
           </div>
