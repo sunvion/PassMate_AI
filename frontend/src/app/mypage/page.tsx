@@ -612,36 +612,107 @@ export default function MyPage() {
               </div>
 
               {hasStudyData ? (
-                <div className="space-y-4">
-                  {scoreTrend.map((item) => (
-                    <div key={item.id}>
-                      <div className="mb-2 flex items-center justify-between text-sm font-bold">
-                        <span>{item.label}</span>
-                        <span
-                          className={
-                            item.score >= 70 ? 'text-blue-600' : 'text-red-500'
-                          }
-                        >
-                          {item.score}점
-                        </span>
-                      </div>
-
-                      <div className="h-4 rounded-full bg-slate-100">
-                        <div
-                          className={`h-4 rounded-full ${item.score >= 70 ? 'bg-blue-600' : 'bg-red-400'
-                            }`}
-                          style={{ width: `${item.score}%` }}
-                        />
-                      </div>
+                <>
+                  {/* 선 그래프 먼저 */}
+                  <div className="rounded-2xl bg-blue-50 px-4 py-4">
+                    <div className="mb-2 flex items-center justify-between">
+                      <p className="text-sm font-black text-slate-700">최근 점수 추세</p>
+                      <p className="text-xs font-bold text-blue-600">
+                        {scoreTrend[1]?.score ?? '-'}점 →
+                        {scoreTrend[0]?.score ?? '-'}점
+                      </p>
                     </div>
-                  ))}
-                </div>
+
+                    <svg viewBox="0 0 360 95" className="h-24 w-full overflow-visible">
+                      {(() => {
+                        const chartData = scoreTrend.slice().reverse()
+
+                        const points = chartData.map((item, index) => {
+                          const chartWidth = 330
+                          const leftPadding = 15
+                          const topPadding = 18
+                          const chartHeight = 58
+
+                          const x =
+                            leftPadding +
+                            index * (chartWidth / Math.max(scoreTrend.length - 1, 1))
+
+                          const y =
+                            topPadding + chartHeight - (item.score / 100) * chartHeight
+
+                          return { ...item, x, y }
+                        })
+
+                        const line = points.map((point) => `${point.x},${point.y}`).join(' ')
+
+                        return (
+                          <>
+                            <polyline
+                              points={line}
+                              fill="none"
+                              stroke="#2563eb"
+                              strokeWidth="4"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+
+                            {points.map((point) => (
+                              <g key={`trend-${point.id}`}>
+                                <circle cx={point.x} cy={point.y} r="5" fill="#2563eb" />
+                                <circle
+                                  cx={point.x}
+                                  cy={point.y}
+                                  r="9"
+                                  fill="#2563eb"
+                                  opacity="0.15"
+                                />
+
+                                <text
+                                  x={point.x}
+                                  y={point.y - 10}
+                                  textAnchor="middle"
+                                  className="fill-blue-700 text-[10px] font-black"
+                                >
+                                  {point.score}
+                                </text>
+                              </g>
+                            ))}
+                          </>
+                        )
+                      })()}
+                    </svg>
+                  </div>
+
+                  {/* 막대 그래프 아래로 이동 */}
+                  <div className="mt-5 space-y-4">
+                    {scoreTrend.map((item) => (
+                      <div key={item.id}>
+                        <div className="mb-2 flex items-center justify-between text-sm font-bold">
+                          <span>{item.label}</span>
+                          <span
+                            className={
+                              item.score >= 70 ? 'text-blue-600' : 'text-red-500'
+                            }
+                          >
+                            {item.score}점
+                          </span>
+                        </div>
+
+                        <div className="h-4 rounded-full bg-slate-100">
+                          <div
+                            className={`h-4 rounded-full ${item.score >= 70 ? 'bg-blue-600' : 'bg-red-400'
+                              }`}
+                            style={{ width: `${item.score}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
               ) : (
                 <div className="flex h-64 items-center justify-center rounded-2xl bg-slate-50 text-center">
                   <div>
-                    <p className="text-lg font-black">
-                      점수 변화 데이터가 없어요
-                    </p>
+                    <p className="text-lg font-black">점수 변화 데이터가 없어요</p>
                     <p className="mt-2 text-sm text-slate-500">
                       시험을 풀면 최근 5회 점수 추이가 표시됩니다.
                     </p>

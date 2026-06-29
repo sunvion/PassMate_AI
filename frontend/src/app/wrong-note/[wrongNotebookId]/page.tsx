@@ -5,13 +5,18 @@ import Sidebar from "@/components/Sidebar";
 import {
     askWrongNoteAI,
     getWrongNotebookDetail,
+    getWrongNoteChatMessages,
     WrongNotebookDetail,
     WrongNoteChatMessage,
     WrongNoteQuestion,
 } from "@/lib/wrongNoteApi";
 import { Bot, Loader2, RotateCcw, Send } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+
+// LLM 마크업 반영
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 function getExamTypeLabel(examType: string) {
     switch (examType) {
@@ -55,6 +60,13 @@ export default function WrongNotebookDetailPage() {
     const [isAiLoading, setIsAiLoading] = useState(false);
     const [chatInput, setChatInput] = useState("");
 
+    // 왼쪽 문제 상세 높이에 맞춰 오른쪽 AI 튜터 높이 동기화
+    const questionSectionRef = useRef<HTMLElement | null>(null);
+    const [aiTutorHeight, setAiTutorHeight] = useState<number | null>(null);
+
+    // 채팅 맨 아래 자동 스크롤용 ref
+    const chatEndRef = useRef<HTMLDivElement | null>(null);
+
     // 문제별 AI 대화 저장
     const [chatHistory, setChatHistory] = useState<
         Record<number, WrongNoteChatMessage[]>
@@ -84,6 +96,55 @@ export default function WrongNotebookDetailPage() {
 
         fetchDetail();
     }, [wrongNotebookId]);
+
+    // ai 채팅방 유지
+    useEffect(() => {
+        async function fetchChatMessages() {
+            if (!selectedQuestion) return;
+
+            const roomId =
+                selectedQuestion.chat_room_id ?? selectedQuestion.room_id;
+
+            if (!roomId) return;
+
+            try {
+                const messages = await getWrongNoteChatMessages(roomId);
+
+                setChatHistory((prev) => ({
+                    ...prev,
+                    [selectedQuestion.question_id]: messages,
+                }));
+            } catch (error) {
+                console.error("AI 대화 이력 조회 실패:", error);
+            }
+        }
+
+        fetchChatMessages();
+    }, [selectedQuestion]);
+
+    // 왼쪽 문제 상세 카드 높이를 감지해서 AI 튜터 높이에 반영
+    useEffect(() => {
+        const target = questionSectionRef.current;
+        if (!target) return;
+
+        const updateHeight = () => {
+            setAiTutorHeight(target.offsetHeight);
+        };
+
+        updateHeight();
+
+        const resizeObserver = new ResizeObserver(updateHeight);
+        resizeObserver.observe(target);
+
+        return () => {
+            resizeObserver.disconnect();
+        };
+    }, [selectedQuestion, notebook]);
+
+    // 새 메시지가 생기면 채팅창 내부에서 맨 아래로 이동
+    useEffect(() => {
+        chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [chatMessages, isAiLoading]);
 
     const handleSelectQuestion = (question: WrongNoteQuestion) => {
         setSelectedQuestion(question);
@@ -125,11 +186,13 @@ export default function WrongNotebookDetailPage() {
             const result = await askWrongNoteAI({
                 questionId,
                 message,
+                roomId: selectedQuestion.chat_room_id ?? selectedQuestion.room_id,
             });
 
             const aiMessage: WrongNoteChatMessage = {
                 role: "assistant",
                 content: result.answer,
+                question_id: questionId,
             };
 
             setChatHistory((prev) => ({
@@ -202,7 +265,6 @@ export default function WrongNotebookDetailPage() {
                         </div>
 
                         <div className="space-y-5">
-                            {/* 문제 목록: 위 가로 스크롤 */}
                             <section className="rounded-2xl border border-slate-200 bg-white p-5">
                                 <div className="mb-4 flex items-center justify-between">
                                     <h2 className="font-bold text-slate-900">
@@ -253,9 +315,11 @@ export default function WrongNotebookDetailPage() {
                             </section>
 
                             <div className="grid grid-cols-12 gap-5">
-                                {/* 문제 상세: 넓게 */}
                                 {/* 문제 상세 */}
-<section className="col-span-7 rounded-2xl border border-slate-200 bg-white p-7">
+                                <section
+                                    ref={questionSectionRef}
+                                    className="col-span-7 flex flex-col rounded-2xl border border-slate-200 bg-white p-7"
+                                >
                                     <h2 className="mb-6 font-bold text-slate-900">문제 상세</h2>
 
                                     {!selectedQuestion ? (
@@ -263,8 +327,7 @@ export default function WrongNotebookDetailPage() {
                                             문제를 선택해주세요.
                                         </p>
                                     ) : (
-                                        <div>
-                                            {/* 문제 이미지 */}
+                                        <div className="flex flex-col">
                                             {selectedQuestion.image_url ? (
                                                 <div className="mb-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">
                                                     <img
@@ -274,7 +337,6 @@ export default function WrongNotebookDetailPage() {
                                                     />
                                                 </div>
                                             ) : (
-                                                // 이미지가 없는 문제만 텍스트 출력
                                                 <p className="mb-6 whitespace-pre-line text-lg font-bold leading-9 text-slate-900">
                                                     Q. {selectedQuestion.question}
                                                 </p>
@@ -335,7 +397,10 @@ export default function WrongNotebookDetailPage() {
                                 </section>
 
                                 {/* AI 튜터 */}
-                                <section className="col-span-5 rounded-2xl border border-slate-200 bg-white p-5">
+                                <section
+                                    className="col-span-5 flex min-h-0 flex-col rounded-2xl border border-slate-200 bg-white p-5"
+                                    style={aiTutorHeight ? { height: `${aiTutorHeight}px` } : undefined}
+                                >
                                     <div className="mb-5 flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                             <Bot className="text-blue-600" size={22} />
@@ -352,8 +417,8 @@ export default function WrongNotebookDetailPage() {
                                         </button>
                                     </div>
 
-                                    <div className="flex h-[680px] flex-col">
-                                        <div className="flex-1 space-y-3 overflow-y-auto rounded-2xl bg-slate-50 p-4">
+                                    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                                        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto rounded-2xl bg-slate-50 p-4">
                                             <div className="mr-4 rounded-2xl bg-white p-4 text-sm leading-7 text-slate-600 shadow-sm">
                                                 안녕하세요! 😊
                                                 <br />이 문제에 대해 궁금한 점을 물어보세요.
@@ -362,12 +427,40 @@ export default function WrongNotebookDetailPage() {
                                             {chatMessages.map((message, index) => (
                                                 <div
                                                     key={index}
-                                                    className={`rounded-2xl p-4 text-sm leading-7 whitespace-pre-line break-words ${message.role === "user"
-                                                            ? "ml-4 bg-blue-600 text-white"
-                                                            : "mr-4 bg-white text-slate-700 shadow-sm"
+                                                    className={`rounded-2xl p-4 text-sm leading-7 break-words ${message.role === "user"
+                                                        ? "ml-4 bg-blue-600 text-white whitespace-pre-line"
+                                                        : "mr-4 bg-white text-slate-700 shadow-sm"
                                                         }`}
                                                 >
-                                                    {message.content}
+                                                    {message.role === "assistant" ? (
+                                                        <ReactMarkdown
+                                                            remarkPlugins={[remarkGfm]}
+                                                            components={{
+                                                                h3: ({ children }) => (
+                                                                    <h3 className="mt-3 mb-2 text-base font-bold text-slate-900">
+                                                                        {children}
+                                                                    </h3>
+                                                                ),
+                                                                strong: ({ children }) => (
+                                                                    <strong className="font-bold text-slate-900">{children}</strong>
+                                                                ),
+                                                                p: ({ children }) => (
+                                                                    <p className="mb-2 leading-7 text-slate-700">{children}</p>
+                                                                ),
+                                                                ul: ({ children }) => (
+                                                                    <ul className="mb-2 list-disc pl-5 text-slate-700">{children}</ul>
+                                                                ),
+                                                                ol: ({ children }) => (
+                                                                    <ol className="mb-2 list-decimal pl-5 text-slate-700">{children}</ol>
+                                                                ),
+                                                                li: ({ children }) => <li className="mb-1">{children}</li>,
+                                                            }}
+                                                        >
+                                                            {message.content}
+                                                        </ReactMarkdown>
+                                                    ) : (
+                                                        message.content
+                                                    )}
                                                 </div>
                                             ))}
 
@@ -376,6 +469,8 @@ export default function WrongNotebookDetailPage() {
                                                     AI가 답변을 작성 중입니다...
                                                 </div>
                                             )}
+
+                                            <div ref={chatEndRef} />
                                         </div>
 
                                         <div className="mt-4 flex gap-2">
