@@ -183,14 +183,16 @@ class CRUDStatistics:
     async def get_wrong_notebook_detail(self, db: AsyncSession, user_id: int, notebook_id: int) -> Optional[Dict[str, Any]]:
         """
         2. 오답노트 단일 상세 조회 (GET /api/v1/wrong-notebooks/{wrong_notebook_id})
-        🚀 [고도화 개정]: LEFT JOIN chat_rooms 구조를 설계하여 로그인한 유저가 해당 문제로 생성한 AI 대화방 번호가 있다면 함께 로드합니다.
+        🚀 [하이브리드 디텍션 고도화]: question_id가 chat_rooms에 있든, chat_messages에 있든 
+        양쪽 경로를 모두 추적하여 유저가 기존에 대화하던 방 ID를 무조건 찾아냅니다.
         """
         nb_query = text("SELECT id, title, exam_type, year, subject FROM wrong_notebooks WHERE id = :id AND user_id = :user_id")
         nb_res = await db.execute(nb_query, {"id": notebook_id, "user_id": user_id})
         nb_row = nb_res.first()
         if not nb_row: return None
 
-        # 🎯 [SQL 스펙 교정 및 확장]: chat_rooms를 LEFT JOIN하여 특정 문항 저격방 번호(cr.id)를 함께 조회합니다.
+        # 🎯 [하이브리드 서브쿼리 엔진 장착]
+        # LEFT JOIN 대신 최신 방 번호를 양방향(방 마스터 OR 상세 메시지)으로 스캔하여 가장 최신 방(LIMIT 1)을 저격합니다.
         items_query = text("""
             SELECT 
                 wni.question_id, 
@@ -204,16 +206,20 @@ class CRUDStatistics:
                 q.explanation, 
                 wni.submitted_at, 
                 q.image_url,
-                cr.id AS chat_room_id  -- 💡 유저별 문제 저격 챗방 고유 식별값 연동 추가
+                (
+                    SELECT r.id 
+                    FROM chat_rooms r
+                    LEFT JOIN chat_messages m ON r.id = m.room_id
+                    WHERE r.user_id = :user_id 
+                      AND (r.question_id = wni.question_id OR m.question_id = wni.question_id)
+                    ORDER BY r.id DESC
+                    LIMIT 1
+                ) AS chat_room_id
             FROM wrong_notebook_items wni
             JOIN questions q ON wni.question_id = q.id
-            LEFT JOIN chat_rooms cr 
-                ON cr.question_id = wni.question_id 
-               AND cr.user_id = :user_id  -- 🛡️ 보안 가드: 반드시 내 대화방만 결합 처리
             WHERE wni.notebook_id = :notebook_id 
             ORDER BY wni.question_number ASC, wni.id ASC
         """)
-        # 매핑 파라미터에 user_id 추가 투입
         items_res = await db.execute(items_query, {"notebook_id": notebook_id, "user_id": user_id})
         items_rows = items_res.all()
 
@@ -236,7 +242,7 @@ class CRUDStatistics:
                 "explanation": r.explanation, 
                 "image_url": r.image_url,
                 "submitted_at": r.submitted_at,
-                "chat_room_id": r.chat_room_id  # 🎯 [스키마 싱크 완료]: 존재 시 방 ID 정수값, 미개설 시 null 할당
+                "chat_room_id": r.chat_room_id  # # 💡 서브쿼리 결과가 안전하게 담겨 나갑니다 (존재 시 정수, 미존재 시 null)
             })
         return {
             "id": nb_row.id, 
