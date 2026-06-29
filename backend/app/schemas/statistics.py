@@ -64,7 +64,7 @@ class WrongNotebookListElement(BaseModel):
 class WrongNotebookItemDetail(BaseModel):
     """💡 특정 오답노트 상세 내부의 문항별 원본 데이터 및 채점 정보 스냅샷"""
     question_id: int
-    number: int                        # 🆕 [프론트엔드 요구사항]: 원본 시험지 기준 실제 문제 번호 필드 추가
+    number: int                        # 원본 시험지 기준 실제 문제 번호 필드
     question: str                      # 원본 문제 질문 본문
     options: dict                      # 사지/오지 선다 보기 딕셔너리 (JSONB 맵핑)
     selected_option: List[int]         # 사용자가 마킹했던 보기 배열 (안 풀었으면 [])
@@ -72,8 +72,11 @@ class WrongNotebookItemDetail(BaseModel):
     is_correct: bool                   # 정답 여부 (오답노트 아이템이므로 기본 False)
     status: str                        # 'wrong' (틀린 문제) 또는 'unsolved' (안 푼 문제) 구분자
     explanation: Optional[str] = None  # 문항 전용 상세 해설 데이터
-    image_url: Optional[str] = None    # 💡 [정보 추가]: 기출 지문 이미지 주소 필드 개설
+    image_url: Optional[str] = None    # 기출 지문 이미지 주소 필드
     submitted_at: datetime             # 답안 제출 및 발급 타임스탬프
+    
+    # 🎯 [핵심 추가]: 이 문항과 이미 연결된 AI 챗봇방이 있다면 방 ID(int), 없으면 null(None)로 응답
+    chat_room_id: Optional[int] = None 
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -85,7 +88,7 @@ class WrongNotebookDetailResponse(BaseModel):
     exam_type: str                     # 시험 종류
     year: Optional[int]                # 기출 연도
     subject: str                       # 과목 명칭
-    items: List[WrongNotebookItemDetail]  # 귀속된 오답 및 미풀이 문항 통합 리스트
+    items: List[WrongNotebookItemDetail]  # 귀속된 오답 및 미풀이 문항 통합 리스트 (여기에 자동으로 chat_room_id가 바인딩됩니다.)
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -110,6 +113,7 @@ class LearningProgressSaveRequest(BaseModel):
     year: Optional[int] = 0            # 운전면허 등 연도 없는 과목은 기본값 0
     last_question_id: int              # 이탈 시점에 화면에 머물러 있던 문제의 ID (PK)
     solved_count: int                  # 프론트엔드 세션에서 현재까지 실제 풀이 완료한 누적 문항 수
+
 
 class UserLearnedDomainElement(BaseModel):
     """💡 유저가 실제 학습한 이력이 존재하는 고유 시험/과목 원소 포맷"""

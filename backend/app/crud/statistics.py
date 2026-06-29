@@ -14,10 +14,9 @@ from typing import List, Optional, Any, Dict
 class CRUDStatistics:
     async def get_user_dashboard_summary(self, db: AsyncSession, user_id: int) -> DashboardSummaryResponse:
         """
-        [개정] 홈 화면 '학습 요약' 3단 카드 대시보드 실시간 집계
+        [기존 유지] 홈 화면 '학습 요약' 3단 카드 대시보드 실시간 집계
         과거 전체 누적 데이터가 아닌, 과목(직렬)별 '가장 최근에 제출된 세션 회차'만 필터링하여 통계를 도출합니다.
         """
-        # 유저의 전체 풀이 기록을 시간순(오름차순)으로 조회
         query = (
             select(ProblemSolvingHistory)
             .where(ProblemSolvingHistory.user_id == user_id)
@@ -26,7 +25,6 @@ class CRUDStatistics:
         result = await db.execute(query)
         rows = result.scalars().all()
 
-        # 풀이 이력이 아예 없는 경우 방어 처리
         if not rows:
             return DashboardSummaryResponse(
                 total_solved=0,
@@ -34,7 +32,6 @@ class CRUDStatistics:
                 recent_attempt_at=None
             )
 
-        # 1. 과목별로 이력 그루핑 (exam_type, year, subject_snapshot)
         exam_groups = {}
         for r in rows:
             key = (r.exam_type, r.year, r.subject_snapshot)
@@ -44,7 +41,6 @@ class CRUDStatistics:
 
         latest_session_rows = []
 
-        # 2. 각 과목 그룹 내에서 '가장 최근에 제출한 청크 세션(20 또는 40문항)' 분리
         for key, items in exam_groups.items():
             exam_type, _, _ = key
             chunk_size = 40 if exam_type == "DRIVERS_LICENSE_1" else 20
@@ -52,21 +48,17 @@ class CRUDStatistics:
             total_len = len(items)
             remainder = total_len % chunk_size
             
-            # 딱 나누어 떨어지면 마지막 chunk_size(20/40)만큼이 최신 제출 회차
             if remainder == 0:
                 last_chunk = items[-chunk_size:]
             else:
-                # 진행 중이거나 규격이 어긋난 경우 남은 잔여 데이터가 최신 제출 회차
                 last_chunk = items[-remainder:]
                 
             latest_session_rows.extend(last_chunk)
 
-        # 3. 필터링된 과목별 최신 회차 데이터만으로 최종 대시보드 요약 지표 연산
         total_solved = len(latest_session_rows)
         correct_count = sum(1 for r in latest_session_rows if r.is_correct)
         average_correct_rate = round((correct_count / total_solved) * 100, 1) if total_solved > 0 else 0.0
         
-        # 최근 응시 기록은 전체 풀이 이력 중 가장 마지막 타임스탬프 반환
         recent_attempt_at = max(r.submitted_at for r in rows)
 
         return DashboardSummaryResponse(
@@ -76,7 +68,7 @@ class CRUDStatistics:
         )
 
     async def get_user_exam_history_details(self, db: AsyncSession, user_id: int) -> List[ExamSessionDetailResponse]:
-        """전체 풀이 이력 기반 동적 규격 슬라이싱 성적표 세션 빌드 (기존 성적표 아코디언 로직 유지)"""
+        """[기존 유지] 전체 풀이 이력 기반 동적 규격 슬라이싱 성적표 세션 빌드"""
         query = (
             select(
                 ProblemSolvingHistory,
@@ -145,7 +137,7 @@ class CRUDStatistics:
         return final_response
 
     async def clear_user_history(self, db: AsyncSession, user_id: int) -> bool:
-        """유저의 모든 문제 풀이 히스토리 일괄 삭제"""
+        """[기존 유지] 유저의 모든 문제 풀이 히스토리 일괄 삭제"""
         query = delete(ProblemSolvingHistory).where(ProblemSolvingHistory.user_id == user_id)
         await db.execute(query)
         await db.commit()
@@ -157,7 +149,6 @@ class CRUDStatistics:
     async def get_wrong_notebooks_list(self, db: AsyncSession, user_id: int) -> List[Dict[str, Any]]:
         """
         1. 오답노트 목록 조회 (GET /api/v1/wrong-notebooks)
-        유저가 소유한 오답노트 메인 목록을 카운트 통계 데이터와 결합하여 고속 집계 조회합니다.
         """
         query = text("""
             SELECT 
@@ -192,23 +183,38 @@ class CRUDStatistics:
     async def get_wrong_notebook_detail(self, db: AsyncSession, user_id: int, notebook_id: int) -> Optional[Dict[str, Any]]:
         """
         2. 오답노트 단일 상세 조회 (GET /api/v1/wrong-notebooks/{wrong_notebook_id})
-        💡 [개정]: wni.question_number를 확실히 추가 로드하고, 실제 시험지 번호 순서대로 단정하게 정렬 오름차순 반환합니다.
+        🚀 [고도화 개정]: LEFT JOIN chat_rooms 구조를 설계하여 로그인한 유저가 해당 문제로 생성한 AI 대화방 번호가 있다면 함께 로드합니다.
         """
         nb_query = text("SELECT id, title, exam_type, year, subject FROM wrong_notebooks WHERE id = :id AND user_id = :user_id")
         nb_res = await db.execute(nb_query, {"id": notebook_id, "user_id": user_id})
         nb_row = nb_res.first()
         if not nb_row: return None
 
-        # 💡 [SQL 교정 완료]: wni.question_number 컬럼 SELECT 추가 및 기출 시험 순서 정렬 가중치 부여
+        # 🎯 [SQL 스펙 교정 및 확장]: chat_rooms를 LEFT JOIN하여 특정 문항 저격방 번호(cr.id)를 함께 조회합니다.
         items_query = text("""
-            SELECT wni.question_id, wni.question_number, q.question, q.options, wni.selected_option, q.answer as correct_answer,
-                   wni.is_correct, wni.status, q.explanation, wni.submitted_at, q.image_url
+            SELECT 
+                wni.question_id, 
+                wni.question_number, 
+                q.question, 
+                q.options, 
+                wni.selected_option, 
+                q.answer as correct_answer,
+                wni.is_correct, 
+                wni.status, 
+                q.explanation, 
+                wni.submitted_at, 
+                q.image_url,
+                cr.id AS chat_room_id  -- 💡 유저별 문제 저격 챗방 고유 식별값 연동 추가
             FROM wrong_notebook_items wni
             JOIN questions q ON wni.question_id = q.id
+            LEFT JOIN chat_rooms cr 
+                ON cr.question_id = wni.question_id 
+               AND cr.user_id = :user_id  -- 🛡️ 보안 가드: 반드시 내 대화방만 결합 처리
             WHERE wni.notebook_id = :notebook_id 
             ORDER BY wni.question_number ASC, wni.id ASC
         """)
-        items_res = await db.execute(items_query, {"notebook_id": notebook_id})
+        # 매핑 파라미터에 user_id 추가 투입
+        items_res = await db.execute(items_query, {"notebook_id": notebook_id, "user_id": user_id})
         items_rows = items_res.all()
 
         import json
@@ -220,7 +226,7 @@ class CRUDStatistics:
             
             items_list.append({
                 "question_id": r.question_id, 
-                "number": r.question_number, # 🆕 [교정 매핑]: Pydantic DTO 스키마 명세 규격 일치 ('number')
+                "number": r.question_number, 
                 "question": r.question, 
                 "options": opts,
                 "selected_option": sel_opt, 
@@ -229,17 +235,21 @@ class CRUDStatistics:
                 "status": r.status, 
                 "explanation": r.explanation, 
                 "image_url": r.image_url,
-                "submitted_at": r.submitted_at
+                "submitted_at": r.submitted_at,
+                "chat_room_id": r.chat_room_id  -- 🎯 [스키마 싱크 완료]: 존재 시 방 ID 정수값, 미개설 시 null 할당
             })
         return {
-            "id": nb_row.id, "title": nb_row.title, "exam_type": nb_row.exam_type, "year": nb_row.year,
-            "subject": nb_row.subject, "items": items_list
+            "id": nb_row.id, 
+            "title": nb_row.title, 
+            "exam_type": nb_row.exam_type, 
+            "year": nb_row.year,
+            "subject": nb_row.subject, 
+            "items": items_list
         }
 
     async def update_wrong_notebook_title(self, db: AsyncSession, user_id: int, notebook_id: int, title: str) -> bool:
         """
         3. 오답노트 이름 수정 (PATCH /api/v1/wrong-notebooks/{wrong_notebook_id})
-        사용자가 지정한 제목 식별자로 오답노트의 고유 명칭을 안전하게 업데이트합니다.
         """
         query = text("UPDATE wrong_notebooks SET title = :title WHERE id = :id AND user_id = :user_id")
         res = await db.execute(query, {"title": title, "id": notebook_id, "user_id": user_id})
@@ -249,19 +259,17 @@ class CRUDStatistics:
     async def delete_wrong_notebook(self, db: AsyncSession, user_id: int, notebook_id: int) -> bool:
         """
         4. 오답노트 개별 삭제 (DELETE /api/v1/wrong-notebooks/{wrong_notebook_id})
-        전체 풀이 이력(History)의 손상 없이, 사용자가 원하는 오답노트 카드 세션만 깔끔하게 제거합니다.
-        (ON DELETE CASCADE로 인해 내부 연결 아이템들은 DB 레이어에서 일괄 동시 제거됩니다.)
         """
         query = text("DELETE FROM wrong_notebooks WHERE id = :id AND user_id = :user_id")
         res = await db.execute(query, {"id": notebook_id, "user_id": user_id})
         await db.commit()
         return res.rowcount > 0
 
-crud_statistics = CRUDStatistics()
-
-
-async def get_wrong_count_by_chapter(self, db: AsyncSession, user_id: int) -> List[Dict[str, Any]]:
-        """유저의 풀이 로그 중 오답들만 필터링하여 챕터별로 카운트 집계"""
+    # 🔗 [위치 교정 완료]: 외부 탑레벨에 선언되어 컴파일 에러를 내던 멤버 함수를 클래스 스코프 내부로 통합 이동
+    async def get_wrong_count_by_chapter(self, db: AsyncSession, user_id: int) -> List[Dict[str, Any]]:
+        """
+        5. 유저의 풀이 로그 중 오답들만 필터링하여 챕터별로 카운트 집계
+        """
         query = (
             select(Question.chapter, func.count(func.distinct(Question.id)).label("wrong_count"))
             .join(ProblemSolvingHistory, ProblemSolvingHistory.question_id == Question.id)
@@ -271,3 +279,6 @@ async def get_wrong_count_by_chapter(self, db: AsyncSession, user_id: int) -> Li
         )
         result = await db.execute(query)
         return [{"chapter": row[0], "wrong_count": row[1]} for row in result.all()]
+
+# 싱글톤 패턴 라우터 연동 객체 배포
+crud_statistics = CRUDStatistics()
