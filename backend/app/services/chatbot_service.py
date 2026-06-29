@@ -144,7 +144,7 @@ async def process_user_message(db: AsyncSession, user_id: int, room_id: int, mes
         
         if "컴퓨터" in q_info.subject:
             system_prompt = (
-                """
+                f"""
 {persona}
 [공통 규칙]
 (위 공통 규칙 그대로)
@@ -194,7 +194,7 @@ async def process_user_message(db: AsyncSession, user_id: int, room_id: int, mes
             )
         else:
             system_prompt = (
-                """
+                f"""
 {persona}
 [공통 규칙]
 (위 공통 규칙 그대로)
