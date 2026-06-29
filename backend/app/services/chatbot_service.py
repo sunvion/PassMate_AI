@@ -146,6 +146,12 @@ async def process_user_message(db: AsyncSession, user_id: int, room_id: int, mes
     for msg in current_history:
         openai_messages.append({"role": msg.role, "content": msg.content})
 
+    # 🚨 디버깅 가드 설치
+    print("==== [VISION DEBUG] IMAGE SOURCE CHECK ====")
+    print(f"🔹 DB에서 조회된 image_url: {target_image}")
+    print(f"🔹 과목명(subject): {q_info.subject if q_info else '인포 없음'}")
+    print("===========================================")
+
     # 5. llm_service.py에 이미지 경로를 파라미터로 넘겨 Vision 활성화
     ai_generated_content = await generate_chat_response(openai_messages, image_source=target_image)
 

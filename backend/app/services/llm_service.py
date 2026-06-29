@@ -15,6 +15,8 @@ def _encode_local_image_to_base64(image_path: str) -> Optional[str]:
     로컬 시스템상의 이미지 절대 경로를 입력받아 OpenAI API에 직접 첨부 가능한 Base64 데이터 문자열로 변환합니다.
     """
     if not image_path or not os.path.exists(image_path):
+        # 🚨 디버깅 가독성을 위해 파일 누락 시 정확한 터미널 에러 로깅 활성화
+        print(f"❌ [IMAGE_NOT_FOUND] 파일 시스템에 문제가 존재하지 않습니다: {image_path}")
         return None
     try:
         with open(image_path, "rb") as image_file:
@@ -56,11 +58,23 @@ async def generate_chat_response(messages: List[Dict[str, str]], image_source: O
         # 🖼️ 이미지 소스가 전달되었을 때 처리
         if image_source:
             final_image_url = None
+            
+            # =================================================================
+            # 🌟 [핵심 버그 수정]: 기존 "..", "..", ".." 3번 연산은 시스템 루트(/)로 넘어갔었습니다.
+            # 파일이 속한 위치(/app/app/services)에서 딱 2번만 상위로 이동하여 
+            # 도커 컨테이너 메인 작업 경로인 '/app'에 정확히 안착시킵니다.
+            # =================================================================
+            base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
-            # 상황 1: 전달받은 문자열이 로컬 물리 경로인 경우 (예: backend/docs/parser/... 또는 프론트 정적 주소)
-            if os.path.exists(image_source) or image_source.startswith("frontend/") or image_source.startswith("backend/"):
-                # 상대 경로가 섞여 들어올 것을 대비해 절대 경로 매핑 전환 및 인코딩 실행
-                base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+            # 🎯 DB에 '/assets/images/...' 처럼 웹 상대 경로로 수록되어 유실되던 패턴 디텍션 수리
+            if image_source.startswith("/assets/") or image_source.startswith("assets/"):
+                clean_path = image_source.lstrip("/")
+                # 프론트엔드 공유 정적 볼륨 경로(/app/frontend/public/assets/...)의 절대 경로를 완벽히 획득합니다.
+                absolute_path = os.path.join(base_dir, "frontend", "public", clean_path)
+                final_image_url = _encode_local_image_to_base64(absolute_path)
+
+            # 상황 1: 전달받은 문자열이 일반 로컬 물리 주소 체계인 경우
+            elif os.path.exists(image_source) or image_source.startswith("frontend/") or image_source.startswith("backend/"):
                 absolute_path = os.path.join(base_dir, image_source) if not os.path.isabs(image_source) else image_source
                 final_image_url = _encode_local_image_to_base64(absolute_path)
             
@@ -84,6 +98,9 @@ async def generate_chat_response(messages: List[Dict[str, str]], image_source: O
                             }
                         ]
                         break
+            else:
+                # 🚨 이미지 식별 매핑에 최종 실패한 경우 추적이 용이하도록 터미널에 경고 표출
+                print(f"⚠️ [VISION_FLOW_WARNING] '{image_source}' 주소의 Base64 데이터 추출에 실패하여 일반 텍스트 모드로 우회 송신합니다.")
 
         # 🚀 gpt-4o-mini 호출 (텍스트 + 이미지를 한 번에 추론)
         response = await client.chat.completions.create(

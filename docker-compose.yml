@@ -32,7 +32,7 @@ services:
     volumes:
       - ./backend:/app
       - ./docs:/app/docs
-    # 🌟 [수정] 컴포즈 가동 시 app/main.py 패키지를 명확히 찌르도록 런타임 명령어 강제 주입
+      - ./frontend/public:/app/frontend/public  # 🌟 [핵심 추가]: 프론트 정적 폴더를 백엔드 컨테이너와 공유합니다!
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     environment:
       - DATABASE_URL=postgresql+asyncpg://${DB_USER:-postgres}:${DB_PASSWORD:-password123}@db:5432/${DB_NAME:-pass_cert_db}
