@@ -25,8 +25,6 @@ export default function Header({ onMenuClick, onLoginClick }: HeaderProps) {
       }
 
       try {
-        setIsLoggedIn(true);
-
         const response = await fetch("http://localhost:8000/api/v1/users/me", {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -39,11 +37,17 @@ export default function Header({ onMenuClick, onLoginClick }: HeaderProps) {
 
         const data = await response.json();
 
+        setIsLoggedIn(true);
         setNickname(data.nickname);
         localStorage.setItem("nickname", data.nickname);
         localStorage.setItem("user", JSON.stringify(data));
       } catch (error) {
         console.error("헤더 유저 정보 조회 실패:", error);
+
+        localStorage.removeItem("token");
+        localStorage.removeItem("nickname");
+        localStorage.removeItem("user");
+
         setIsLoggedIn(false);
         setNickname(null);
       }
