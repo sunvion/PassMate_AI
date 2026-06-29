@@ -12,16 +12,11 @@ import {
 } from "@/lib/wrongNoteApi";
 import { Bot, Loader2, RotateCcw, Send } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-//LLM 마크업 반영
+// LLM 마크업 반영
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-
-//홈페이지 애니메이션
-import { motion, useScroll, useTransform } from "framer-motion";
-import Image from "next/image";
-import { useRef } from "react";
 
 function getExamTypeLabel(examType: string) {
     switch (examType) {
@@ -65,6 +60,13 @@ export default function WrongNotebookDetailPage() {
     const [isAiLoading, setIsAiLoading] = useState(false);
     const [chatInput, setChatInput] = useState("");
 
+    // 왼쪽 문제 상세 높이에 맞춰 오른쪽 AI 튜터 높이 동기화
+    const questionSectionRef = useRef<HTMLElement | null>(null);
+    const [aiTutorHeight, setAiTutorHeight] = useState<number | null>(null);
+
+    // 채팅 맨 아래 자동 스크롤용 ref
+    const chatEndRef = useRef<HTMLDivElement | null>(null);
+
     // 문제별 AI 대화 저장
     const [chatHistory, setChatHistory] = useState<
         Record<number, WrongNoteChatMessage[]>
@@ -80,9 +82,6 @@ export default function WrongNotebookDetailPage() {
 
             try {
                 const data = await getWrongNotebookDetail(wrongNotebookId);
-
-                console.log(data);
-
                 const items = data.items ?? [];
 
                 setNotebook({ ...data, items });
@@ -106,9 +105,6 @@ export default function WrongNotebookDetailPage() {
             const roomId =
                 selectedQuestion.chat_room_id ?? selectedQuestion.room_id;
 
-            console.log("selectedQuestion:", selectedQuestion);
-            console.log("roomId:", roomId);
-
             if (!roomId) return;
 
             try {
@@ -125,6 +121,30 @@ export default function WrongNotebookDetailPage() {
 
         fetchChatMessages();
     }, [selectedQuestion]);
+
+    // 왼쪽 문제 상세 카드 높이를 감지해서 AI 튜터 높이에 반영
+    useEffect(() => {
+        const target = questionSectionRef.current;
+        if (!target) return;
+
+        const updateHeight = () => {
+            setAiTutorHeight(target.offsetHeight);
+        };
+
+        updateHeight();
+
+        const resizeObserver = new ResizeObserver(updateHeight);
+        resizeObserver.observe(target);
+
+        return () => {
+            resizeObserver.disconnect();
+        };
+    }, [selectedQuestion, notebook]);
+
+    // 새 메시지가 생기면 채팅창 내부에서 맨 아래로 이동
+    useEffect(() => {
+        chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [chatMessages, isAiLoading]);
 
     const handleSelectQuestion = (question: WrongNoteQuestion) => {
         setSelectedQuestion(question);
@@ -245,7 +265,6 @@ export default function WrongNotebookDetailPage() {
                         </div>
 
                         <div className="space-y-5">
-                            {/* 문제 목록: 위 가로 스크롤 */}
                             <section className="rounded-2xl border border-slate-200 bg-white p-5">
                                 <div className="mb-4 flex items-center justify-between">
                                     <h2 className="font-bold text-slate-900">
@@ -296,9 +315,11 @@ export default function WrongNotebookDetailPage() {
                             </section>
 
                             <div className="grid grid-cols-12 gap-5">
-                                {/* 문제 상세: 넓게 */}
                                 {/* 문제 상세 */}
-                                <section className="col-span-7 rounded-2xl border border-slate-200 bg-white p-7">
+                                <section
+                                    ref={questionSectionRef}
+                                    className="col-span-7 flex flex-col rounded-2xl border border-slate-200 bg-white p-7"
+                                >
                                     <h2 className="mb-6 font-bold text-slate-900">문제 상세</h2>
 
                                     {!selectedQuestion ? (
@@ -306,8 +327,7 @@ export default function WrongNotebookDetailPage() {
                                             문제를 선택해주세요.
                                         </p>
                                     ) : (
-                                        <div>
-                                            {/* 문제 이미지 */}
+                                        <div className="flex flex-col">
                                             {selectedQuestion.image_url ? (
                                                 <div className="mb-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">
                                                     <img
@@ -317,7 +337,6 @@ export default function WrongNotebookDetailPage() {
                                                     />
                                                 </div>
                                             ) : (
-                                                // 이미지가 없는 문제만 텍스트 출력
                                                 <p className="mb-6 whitespace-pre-line text-lg font-bold leading-9 text-slate-900">
                                                     Q. {selectedQuestion.question}
                                                 </p>
@@ -378,7 +397,10 @@ export default function WrongNotebookDetailPage() {
                                 </section>
 
                                 {/* AI 튜터 */}
-                                <section className="col-span-5 rounded-2xl border border-slate-200 bg-white p-5">
+                                <section
+                                    className="col-span-5 flex min-h-0 flex-col rounded-2xl border border-slate-200 bg-white p-5"
+                                    style={aiTutorHeight ? { height: `${aiTutorHeight}px` } : undefined}
+                                >
                                     <div className="mb-5 flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                             <Bot className="text-blue-600" size={22} />
@@ -395,8 +417,8 @@ export default function WrongNotebookDetailPage() {
                                         </button>
                                     </div>
 
-                                    <div className="flex h-[680px] flex-col">
-                                        <div className="flex-1 space-y-3 overflow-y-auto rounded-2xl bg-slate-50 p-4">
+                                    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                                        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto rounded-2xl bg-slate-50 p-4">
                                             <div className="mr-4 rounded-2xl bg-white p-4 text-sm leading-7 text-slate-600 shadow-sm">
                                                 안녕하세요! 😊
                                                 <br />이 문제에 대해 궁금한 점을 물어보세요.
@@ -447,6 +469,8 @@ export default function WrongNotebookDetailPage() {
                                                     AI가 답변을 작성 중입니다...
                                                 </div>
                                             )}
+
+                                            <div ref={chatEndRef} />
                                         </div>
 
                                         <div className="mt-4 flex gap-2">
