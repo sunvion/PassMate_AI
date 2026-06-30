@@ -144,7 +144,6 @@ async def process_user_message(db: AsyncSession, user_id: int, room_id: int, mes
 현재 질문은 해당 과목과 관련이 없어 답변드릴 수 없습니다.
 현재 문제 또는 관련 개념에 대해 질문해 주시면 자세히 설명드리겠습니다."
 """
-    )
 
     # 3. 과목 데이터 보관 구조(이미지형 vs 텍스트형)에 따른 프롬프트 최종 분기
     if room_question_id and q_info:  # 💡 여기도 백업본 변수 활용
