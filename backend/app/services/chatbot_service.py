@@ -6,10 +6,16 @@ from typing import List
 from app.crud import chatbot as chatbot_crud
 from app.models.chatbot import ChatRoom, ChatMessage
 from app.models.question import Question
-from app.schemas.chatbot import ChatMessageCreate
+from app.schemas.chatbot import ChatRoomCreate, ChatMessageCreate 
 
 from app.services.context_builder import build_question_context
 from app.services.llm_service import generate_chat_response
+
+# 💡 [★멀티모달 시각 지침★]
+# 1. 현재 문제의 보기(①~④)는 데이터베이스에 텍스트로 저장되어 있지 않고, 함께 입력되는 '이미지 파일'에 포함되어 있어.
+# 2. 학생이 '4번 보기 왜 틀림?', '③번 보기 보충 설명해줘'와 같이 특정 보기를 짚어 질문하면, 이미지 속에서 해당 번호의 텍스트와 내용을 직접 눈으로 확인하고 정확하게 매칭하여 해설해줘.
+# 3. 이미지에 포함된 글자가 조금 흐릿하더라도 맥락(컴퓨터일반 지식)을 고려하여 가장 정확한 IT 전문 용어로 해석해야 해.
+# 4. 만약 이미지 식별이 불가능할 정도로 깨져 있다면 환각(지어내기)을 일으키지 말고, '회원님, 이미지 속 보기 글자가 흐려 정확한 식별이 어렵습니다. 번거로우시겠지만 보기 내용을 적어주시면 더 자세히 설명해 드릴게요!'라고 안내해줘.
 
 
 async def create_new_room(db: AsyncSession, user_id: int, room_in: ChatRoomCreate) -> ChatRoom:
@@ -31,7 +37,6 @@ async def create_new_room(db: AsyncSession, user_id: int, room_in: ChatRoomCreat
                 welcome_content = f"안녕하세요! 🚗 **운전면허** 전문 AI 강사입니다. {q_obj.number}번 문제에 대해서 무엇이든 대답해드릴게요. 무엇이 궁금하신가요?"
 
     # 3. 챗봇이 열리자마자 띄워줄 인사말을 assistant 역할로 DB에 즉시 캐시 저장
-    # ⚠️ 이 내부의 commit 때문에 상단의 'room' 객체 속성들이 만료(Expire)됩니다.
     await chatbot_crud.insert_chat_message(
         db=db,
         room_id=room.id,
@@ -40,9 +45,7 @@ async def create_new_room(db: AsyncSession, user_id: int, room_in: ChatRoomCreat
         question_id=room_in.question_id
     )
 
-    # =================================================================
-    # 🌟 [🌟 핵심 버그 수정]: 만료된 room 객체의 속성들을 비동기로 안전하게 새로고침합니다.
-    # =================================================================
+    # 🌟 [핵심 버그 수정]: 만료된 room 객체의 속성들을 비동기로 안전하게 새로고침합니다.
     await db.refresh(room)
 
     return room
@@ -73,71 +76,22 @@ async def process_user_message(
     room_id: int,
     message_in: ChatMessageCreate
 ) -> ChatMessage:
-
+    """
+    [대화 진행 엔진]
+    유저 질문 적재 ➡️ 과목별 페르소나 및 정밀 가이드라인 바인딩 ➡️ 비전 분석 호출 ➡️ AI 답변 영구 저장
+    """
     # =========================================================
-    # 1. 방 검증
+    # 1. 방 조회 및 권한 검증
     # =========================================================
     room = await chatbot_crud.get_room_by_id(db, room_id)
-
     if not room or room.user_id != user_id:
         raise ValueError("접근 권한 없음")
 
+    # 🌟 [상태 오염 방지]: 객체 만료 전에 필요한 고유 ID를 로컬 안전 변수에 스냅샷 백업합니다.
     room_question_id = room.question_id
 
     # =========================================================
-    # 2. 기본 변수 초기화
-    # =========================================================
-    q_info = None
-    subject = None
-    q_context = None
-    target_image = None
-    persona = "기출문제 기반 학습 튜터"
-
-    # =========================================================
-    # 3. 문제 데이터 로딩 (핵심)
-    # =========================================================
-    if room_question_id:
-
-        q_info = await db.get(Question, room_question_id)
-
-        if q_info:
-            subject = q_info.subject
-            target_image = q_info.image_url
-
-            # 🔥 context는 여기서 "먼저" 생성해야 함
-            q_context = await build_question_context(db, room_question_id)
-
-            # persona는 최소화 (중요)
-            if "컴퓨터" in subject:
-                persona = "컴퓨터 기초 개념을 설명하는 튜터"
-            elif "도로" in subject or "운전" in subject:
-                persona = "도로교통법 기반 설명 튜터"
-
-    # =========================================================
-    # 4. system prompt 생성 (여기서 ONLY 1번 생성)
-    # =========================================================
-    domain = build_domain(subject)
-
-    system_prompt = f"""
-{ROLE}
-
-[역할 설명]
-{persona}
-
-[과목]
-{subject}
-
-{domain}
-
-[문제]
-{q_context}
-
-[규칙]
-{POLICY}
-"""
-    
-    # =========================================================
-    # 5. 유저 메시지 저장
+    # 2. 유저 메시지 선제 저장 (대화 컨텍스트 히스토리에 포함시키기 위함)
     # =========================================================
     await chatbot_crud.insert_chat_message(
         db=db,
@@ -147,27 +101,30 @@ async def process_user_message(
         question_id=room_question_id
     )
 
-    # 2. 과목분류별 최적화 페르소나 및 이미지 소스 준비 단계
+    # =========================================================
+    # 3. 과목 분류별 페르소나 및 이미지 스소스/기출 정보 준비 단계
+    # =========================================================
     persona = "너는 친절하고 전문적인 기출문제 오답 클리닉 선생님이야."
     q_info = None
     target_image = None
+    q_context = "제공된 명시적 문항 정보가 없습니다."
 
-    if room_question_id:  # 💡 만료된 room.question_id 대신 백업본 변수 사용!
+    if room_question_id:
         q_info = await db.get(Question, room_question_id)
         if q_info:
             target_image = q_info.image_url
+            # 💡 기출문제의 세부 텍스트 덩어리(발문, 선지, 정답) 고속 빌드
+            q_context = await build_question_context(db, room_question_id)
+
             if "컴퓨터" in q_info.subject:
                 persona = "너는 컴퓨터구조, 데이터베이스, 운영체제론, 자료 구조, 프로그래밍 언어론, 소프트웨어 공학 및 시스템 설계, 데이터 통신과 네트워크, 인터넷 및 최신 기술 용어의 내부 원리를 꿰뚫고 있는 전산직 공무원 1:1 전문 기술 과외 강사야. 전공 도메인 지식에 근거해 매우 논리적이고 단계적으로 가르쳐줘."
             elif "도로" in q_info.subject or "운전" in q_info.subject:
                 persona = "너는 국가 도로교통법 조항 및 교통안전 규칙 표준 지침에 정통한 법규 강사야. 벌점 기준, 행정 처분, 도로 수칙 등의 법적 근거를 명확히 선언하며 차분하게 설명해줘."
 
-    # 기본 베이스 가이드라인 라인 조립
-    system_prompt = (
-"""
-{persona}
-[공통 규칙]
-
-역할
+    # =========================================================
+    # 4. 프롬프트 프레임 생성 (공통 가이드라인 선언)
+    # =========================================================
+    common_rules = """역할
 - 당신은 기출문제 학습을 위한 AI 튜터입니다.
 - 현재 제공된 기출문항과 동일한 과목 범위 안에서만 답변합니다.
 
@@ -190,20 +147,16 @@ async def process_user_message(
 
 "죄송합니다. 저는 현재 학습 중인 과목의 기출문제 학습을 위한 AI입니다.
 현재 질문은 해당 과목과 관련이 없어 답변드릴 수 없습니다.
-현재 문제 또는 관련 개념에 대해 질문해 주시면 자세히 설명드리겠습니다."
-"""
-    )
+현재 문제 또는 관련 개념에 대해 질문해 주시면 자세히 설명드리겠습니다.\""""
 
-    # 3. 과목 데이터 보관 구조(이미지형 vs 텍스트형)에 따른 프롬프트 최종 분기
-    if room_question_id and q_info:  # 💡 여기도 백업본 변수 활용
-        q_context = await build_question_context(db, room_question_id)
-
+    # =========================================================
+    # 5. 과목 데이터 보관 구조에 따른 시스템 프롬프트 최종 완성
+    # =========================================================
+    if room_question_id and q_info:
         if "컴퓨터" in q_info.subject:
-            system_prompt = (
-                f"""
-{persona}
+            system_prompt = f"""{persona}
 [공통 규칙]
-(위 공통 규칙 그대로)
+{common_rules}
 
 [기출문항 정보]
 {q_context}
@@ -212,15 +165,8 @@ async def process_user_message(
 너는 전산직 공무원 컴퓨터일반 기출문제 전문 AI 튜터이다.
 
 학습 범위
-- 컴퓨터구조
-- 운영체제
-- 데이터베이스
-- 자료구조
-- 네트워크
-- 소프트웨어공학
-- 프로그래밍언어
-- 정보보안
-- 인터넷 및 최신 IT 기술
+- 컴퓨터구조, 운영체제, 데이터베이스, 자료구조, 네트워크, 소프트웨어공학, 프로그래밍언어, 정보보안, 인터넷 및 최신 IT 기술
+
 
 규칙
 - 위 학습 범위 내 질문만 답변한다.
@@ -230,30 +176,16 @@ async def process_user_message(
 
 가드레일
 다음과 같은 질문에는 답변하지 않는다.
-
-- 연예
-- 정치
-- 사회
-- 시사
-- 음식
-- 여행
-- 상담
-- 자기소개서 작성
-- 일반 프로그래밍 코드 작성
-- 현재 과목과 무관한 IT 질문
+- 연예, 정치, 사회, 시사, 음식, 여행, 상담, 자기소개서 작성, 일반 프로그래밍 코드 작성, 현재 과목과 무관한 IT 질문
 
 관련 없는 질문이라면 다음과 같이 답한다.
-
 "죄송합니다. 저는 컴퓨터일반 기출문제 학습을 위한 AI입니다.
 컴퓨터일반 과목과 관련된 질문만 답변할 수 있습니다."
-                """
-            )
+"""
         else:
-            system_prompt = (
-                f"""
-{persona}
+            system_prompt = f"""{persona}
 [공통 규칙]
-(위 공통 규칙 그대로)
+{common_rules}
 
 [기출문항 정보]
 {q_context}
@@ -262,17 +194,7 @@ async def process_user_message(
 너는 운전면허 필기시험 전문 AI 강사이다.
 
 학습 범위
-- 도로교통법
-- 안전운전
-- 교통표지
-- 신호
-- 운전자 의무
-- 벌점
-- 범칙금
-- 행정처분
-- 교통사고 예방
-- 자동차 관리
-- 운전면허 시험 범위
+- 도로교통법, 안전운전, 교통표지, 신호, 운전자 의무, 벌점, 범칙금, 행정처분, 교통사고 예방, 자동차 관리, 운전면허 시험 범위
 
 답변 원칙
 - 반드시 현재 제공된 기출문항 정보를 우선 활용한다.
@@ -314,17 +236,20 @@ async def process_user_message(
 검색 결과가 없는 경우에는 제공된 기출문항 정보만 이용하여 답변한다.
 
 검색되지 않은 법령이나 규정을 임의로 생성하지 않는다.
-                """
-            )
+"""
+    else:
+        system_prompt = f"{persona}\n학생의 질문에 정중하고 친절한 어조로 상세히 대답해줘."
 
-    # 4. 히스토리 배열 빌딩 및 OpenAI 전송
+    # =========================================================
+    # 6. 히스토리 배열 빌딩 및 OpenAI 전송 팩 조립
+    # =========================================================
     openai_messages = [{"role": "system", "content": system_prompt}]
     current_history = await chatbot_crud.get_messages_by_room(db, room_id)
 
     for msg in current_history:
         openai_messages.append({"role": msg.role, "content": msg.content})
 
-    # 🚨 디버깅 가드 설치
+# 🚨 디버깅 가드 설치
     print("==== [VISION DEBUG] IMAGE SOURCE CHECK ====")
     print(f"🔹 DB에서 조회된 image_url: {target_image}")
     print(f"🔹 과목명(subject): {q_info.subject if q_info else '인포 없음'}")
@@ -334,13 +259,13 @@ async def process_user_message(
     ai_generated_content = await generate_chat_response(openai_messages, image_source=target_image)
 
     # =========================================================
-    # 8. 저장
+    # 8. AI 피드백 대화 DB 영구 기록 및 최종 반환
     # =========================================================
-    result = await chatbot_crud.insert_chat_message(
+    ai_message_record = await chatbot_crud.insert_chat_message(
         db=db,
         room_id=room_id,
         role="assistant",
-        content=ai_response,
-        question_id=room_question_id
+        content=ai_generated_content,
+        question_id=room_question_id  # 💡 여기도 안전하게 백업본 변수 주입
     )
     return ai_message_record
