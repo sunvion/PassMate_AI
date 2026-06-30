@@ -1,5 +1,4 @@
 # backend/app/services/chatbot_service.py
-
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 
@@ -8,6 +7,7 @@ from app.models.chatbot import ChatRoom, ChatMessage
 from app.models.question import Question
 from app.schemas.chatbot import ChatRoomCreate, ChatMessageCreate 
 
+# 💡 프로젝트 구조에 준비되어 있는 LLM 및 컨텍스트 빌더 모듈 임포트
 from app.services.context_builder import build_question_context
 from app.services.llm_service import generate_chat_response
 
@@ -24,10 +24,10 @@ async def create_new_room(db: AsyncSession, user_id: int, room_in: ChatRoomCreat
     """
     # 1. 방 레코드 기본 생성 및 문제 ID 바인딩
     room = await chatbot_crud.create_chat_room(db=db, user_id=user_id, room_in=room_in)
-
+    
     # 2. 과목군을 역추적하여 첫 인사말(웰컴 메시지) 동적 커스텀 적재
     welcome_content = "안녕하세요! 해당 문항에 대해 궁금한 점을 편하게 물어보세요. 보기 분석이나 핵심 개념을 1:1로 가르쳐 드립니다! 😊"
-
+    
     if room_in.question_id:
         q_obj = await db.get(Question, room_in.question_id)
         if q_obj:
@@ -44,10 +44,12 @@ async def create_new_room(db: AsyncSession, user_id: int, room_in: ChatRoomCreat
         content=welcome_content,
         question_id=room_in.question_id
     )
-
-    # 🌟 [핵심 버그 수정]: 만료된 room 객체의 속성들을 비동기로 안전하게 새로고침합니다.
+    
+    # =================================================================
+    # 🌟 [🌟 핵심 버그 수정]: 만료된 room 객체의 속성들을 비동기로 안전하게 새로고침합니다.
+    # =================================================================
     await db.refresh(room)
-
+    
     return room
 
 
@@ -66,39 +68,32 @@ async def get_room_messages(db: AsyncSession, room_id: int, user_id: int) -> Lis
     room = await chatbot_crud.get_room_by_id(db, room_id)
     if not room or room.user_id != user_id:
         raise ValueError("해당 대화방에 접근할 권한이 없거나 존재하지 않는 방입니다.")
-
+        
     return await chatbot_crud.get_messages_by_room(db=db, room_id=room_id)
 
 
-async def process_user_message(
-    db: AsyncSession,
-    user_id: int,
-    room_id: int,
-    message_in: ChatMessageCreate
-) -> ChatMessage:
+async def process_user_message(db: AsyncSession, user_id: int, room_id: int, message_in: ChatMessageCreate) -> ChatMessage:
     """
-    [대화 진행 엔진]
-    유저 질문 적재 ➡️ 과목별 페르소나 및 정밀 가이드라인 바인딩 ➡️ 비전 분석 호출 ➡️ AI 답변 영구 저장
+    [대화 진행 인터셉터]
+    마스터 룸에 바인딩된 원래 기출문제 정보를 기반으로 매 질문 턴마다 완벽한 문맥 프롬프트를 재생성합니다.
     """
-    # =========================================================
-    # 1. 방 조회 및 권한 검증
-    # =========================================================
     room = await chatbot_crud.get_room_by_id(db, room_id)
     if not room or room.user_id != user_id:
-        raise ValueError("접근 권한 없음")
+        raise ValueError("해당 대화방에 메시지를 보낼 권한이 없습니다.")
 
-    # 🌟 [상태 오염 방지]: 객체 만료 전에 필요한 고유 ID를 로컬 안전 변수에 스냅샷 백업합니다.
+    # =================================================================
+    # 🌟 [핵심 버그 수정]: 내부 commit에 의해 room 객체가 만료되기 전에
+    # 필요한 속성(question_id)을 로컬 변수에 스냅샷으로 안전하게 백업합니다.
+    # =================================================================
     room_question_id = room.question_id
 
-    # =========================================================
-    # 2. 유저 메시지 선제 저장 (대화 컨텍스트 히스토리에 포함시키기 위함)
-    # =========================================================
+    # 1. 유저 질문 적재 (⚠️ 이 내부의 commit 때문에 상단 room 객체가 만료됨)
     await chatbot_crud.insert_chat_message(
         db=db,
         room_id=room_id,
         role="user",
         content=message_in.content,
-        question_id=room_question_id
+        question_id=room_question_id  # 백업된 변수 사용
     )
 
     # =========================================================
@@ -147,12 +142,14 @@ async def process_user_message(
 
 "죄송합니다. 저는 현재 학습 중인 과목의 기출문제 학습을 위한 AI입니다.
 현재 질문은 해당 과목과 관련이 없어 답변드릴 수 없습니다.
-현재 문제 또는 관련 개념에 대해 질문해 주시면 자세히 설명드리겠습니다.\""""
+현재 문제 또는 관련 개념에 대해 질문해 주시면 자세히 설명드리겠습니다."
+"""
+    )
 
-    # =========================================================
-    # 5. 과목 데이터 보관 구조에 따른 시스템 프롬프트 최종 완성
-    # =========================================================
-    if room_question_id and q_info:
+    # 3. 과목 데이터 보관 구조(이미지형 vs 텍스트형)에 따른 프롬프트 최종 분기
+    if room_question_id and q_info:  # 💡 여기도 백업본 변수 활용
+        q_context = await build_question_context(db, room_question_id)
+        
         if "컴퓨터" in q_info.subject:
             system_prompt = f"""{persona}
 [공통 규칙]
@@ -245,11 +242,11 @@ async def process_user_message(
     # =========================================================
     openai_messages = [{"role": "system", "content": system_prompt}]
     current_history = await chatbot_crud.get_messages_by_room(db, room_id)
-
+    
     for msg in current_history:
         openai_messages.append({"role": msg.role, "content": msg.content})
 
-# 🚨 디버깅 가드 설치
+    # 🚨 디버깅 가드 설치
     print("==== [VISION DEBUG] IMAGE SOURCE CHECK ====")
     print(f"🔹 DB에서 조회된 image_url: {target_image}")
     print(f"🔹 과목명(subject): {q_info.subject if q_info else '인포 없음'}")
@@ -258,9 +255,7 @@ async def process_user_message(
     # 5. llm_service.py에 이미지 경로를 파라미터로 넘겨 Vision 활성화
     ai_generated_content = await generate_chat_response(openai_messages, image_source=target_image)
 
-    # =========================================================
-    # 8. AI 피드백 대화 DB 영구 기록 및 최종 반환
-    # =========================================================
+    # 6. GPT 최종 피드백 답변 저장 후 컨트롤러 반환
     ai_message_record = await chatbot_crud.insert_chat_message(
         db=db,
         room_id=room_id,
