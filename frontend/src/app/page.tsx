@@ -6,6 +6,7 @@ import Image from 'next/image'
 import Header from '../components/Header'
 import Sidebar from '../components/Sidebar'
 import LoginModal from '../components/LoginModal'
+import { Send } from "lucide-react";
 
 export default function HomePage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -304,8 +305,8 @@ export default function HomePage() {
                   readOnly
                 />
 
-                <button className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white">
-                  ✈
+                <button className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white hover:bg-blue-700 transition">
+                  <Send size={17} />
                 </button>
               </div>
             </div>
