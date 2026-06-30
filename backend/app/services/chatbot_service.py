@@ -10,6 +10,7 @@ from app.schemas.chatbot import ChatRoomCreate, ChatMessageCreate
 # 💡 프로젝트 구조에 준비되어 있는 LLM 및 컨텍스트 빌더 모듈 임포트
 from app.services.context_builder import build_question_context
 from app.services.llm_service import generate_chat_response
+from app.services.rag.law_rag import search_law
 
 # 💡 [★멀티모달 시각 지침★]
 # 1. 현재 문제의 보기(①~④)는 데이터베이스에 텍스트로 저장되어 있지 않고, 함께 입력되는 '이미지 파일'에 포함되어 있어.
@@ -103,6 +104,7 @@ async def process_user_message(db: AsyncSession, user_id: int, room_id: int, mes
     q_info = None
     target_image = None
     q_context = "제공된 명시적 문항 정보가 없습니다."
+    law_context = ""
 
     if room_question_id:
         q_info = await db.get(Question, room_question_id)
@@ -112,9 +114,19 @@ async def process_user_message(db: AsyncSession, user_id: int, room_id: int, mes
             q_context = await build_question_context(db, room_question_id)
 
             if "컴퓨터" in q_info.subject:
-                persona = "너는 컴퓨터구조, 데이터베이스, 운영체제론, 자료 구조, 프로그래밍 언어론, 소프트웨어 공학 및 시스템 설계, 데이터 통신과 네트워크, 인터넷 및 최신 기술 용어의 내부 원리를 꿰뚫고 있는 전산직 공무원 1:1 전문 기술 과외 강사야. 전공 도메인 지식에 근거해 매우 논리적이고 단계적으로 가르쳐줘."
+                persona = "너는 컴퓨터구조, 데이터베이스, 운영체제론, 자료 구조, 프로그래밍 언어론, 소프트웨어 공학 및 시스템 설계, 데이터 통신 및 네트워크, 인터넷 및 최신 기술 용어의 내부 원리를 꿰뚫고 있는 전산직 공무원 1:1 전문 기술 과외 강사야. 전공 도메인 지식에 근거해 매우 논리적이고 단계적으로 가르쳐줘."
             elif "도로" in q_info.subject or "운전" in q_info.subject:
                 persona = "너는 국가 도로교통법 조항 및 교통안전 규칙 표준 지침에 정통한 법규 강사야. 벌점 기준, 행정 처분, 도로 수칙 등의 법적 근거를 명확히 선언하며 차분하게 설명해줘."
+                
+                # RAG 검색 수행 (질문을 기반으로 관련 법령 검색)
+                try:
+                    law_chunks = search_law(message_in.content)
+                    if law_chunks:
+                        law_text = "\n".join([f"- {c['content']}" for c in law_chunks])
+                        law_context = f"\n[검색 결과]\n{law_text}\n"
+                except Exception as e:
+                    # RAG 검색 실패 시에도 로그만 출력하고 빈 컨텍스트로 fallback하여 기존 GPT 동작 유지
+                    print(f"⚠️ [RAG_SEARCH_FALLBACK] RAG 검색 중 오류 발생으로 기본 GPT 우회: {str(e)}")
 
     # =========================================================
     # 4. 프롬프트 프레임 생성 (공통 가이드라인 선언)
@@ -185,7 +197,7 @@ async def process_user_message(db: AsyncSession, user_id: int, room_id: int, mes
 
 [기출문항 정보]
 {q_context}
-
+{law_context}
 [운전면허 전용 규칙]
 너는 운전면허 필기시험 전문 AI 강사이다.
 
