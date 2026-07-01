@@ -205,6 +205,10 @@ export default function SingleSolvePage() {
     if (!currentQuestion) return;
 
     try {
+      // 현재 선택한 답변들도 저장
+      await submitBulkAnswers(examType, answers, questions);
+
+      // 이어풀기 위치/진행률 저장
       await saveLearningProgress(
         examType,
         subject,
