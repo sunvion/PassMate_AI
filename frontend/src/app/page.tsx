@@ -43,7 +43,7 @@ export default function HomePage() {
             </h1>
 
             <p className="mb-8 text-lg leading-8 text-slate-600">
-              PassMate AI는 기출 분석과 AI 기술을 통해
+              PassMate는 기출 분석과 AI 기술을 통해
               <br />
               공무원 시험 합격까지 가장 스마트한 길을 제시합니다.
             </p>

@@ -87,14 +87,14 @@ export default function Header({ onMenuClick, onLoginClick }: HeaderProps) {
           <div className="flex items-center gap-3 text-xl font-extrabold text-slate-950">
             <Image
               src="/images/PM_icon.png"
-              alt="PassMate AI 로고"
+              alt="PassMate 로고"
               width={45}
               height={45}
               className="h-auto w-auto rounded-lg"
               priority
             />
             <span className="hidden md:block font-extrabold text-slate-950">
-              PassMate AI
+              PassMate
             </span>
           </div>
         </Link>
