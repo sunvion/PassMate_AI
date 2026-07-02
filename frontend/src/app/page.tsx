@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 
 import Header from '../components/Header'
@@ -13,27 +13,186 @@ export default function HomePage() {
   const [isLoginOpen, setIsLoginOpen] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
 
+  // 마우스를 천천히 따라오는 배경 블러
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
+  const [smoothPosition, setSmoothPosition] = useState({ x: 0, y: 0 })
+
+  // 눈 깜빡임 애니메이션
+  const [isBlinking, setIsBlinking] = useState(false)
+
+  // AI 해설 애니메이션
+  const aiAnswer =
+    '문제 6번의 답은 ②번입니다.\n\n10진수 29를 2진수로 바꾸면 11101입니다.\n\n여기서 2비트만큼 오른쪽으로 이동하면 00111이 되고,\n이를 다시 10진수로 변환하면 7입니다.\n\n따라서 정답은 ②번입니다.'
+  const [typedAnswer, setTypedAnswer] = useState('')
+
   useEffect(() => {
     const token = localStorage.getItem('token')
     setIsLoggedIn(!!token)
   }, [])
 
-  return (
-    <main className="min-h-screen bg-white text-slate-900">
-      <Header
-        onMenuClick={() => setIsMenuOpen(!isMenuOpen)}
-        onLoginClick={() => setIsLoginOpen(true)}
-      />
+  // 마우스 위치를 저장
+  useEffect(() => {
+    const handleMouseMove = (event: MouseEvent) => {
+      setMousePosition({
+        x: event.clientX,
+        y: event.clientY,
+      })
+    }
 
-      <Sidebar isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
+    window.addEventListener('mousemove', handleMouseMove)
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove)
+    }
+  }, [])
+
+  // 블러가 마우스를 바로 따라가지 않고 부드럽게 따라오도록 처리
+  useEffect(() => {
+    let animationFrameId: number
+
+    const animate = () => {
+      setSmoothPosition((prev) => ({
+        x: prev.x + (mousePosition.x - prev.x) * 0.08,
+        y: prev.y + (mousePosition.y - prev.y) * 0.08,
+      }))
+
+      animationFrameId = requestAnimationFrame(animate)
+    }
+
+    animationFrameId = requestAnimationFrame(animate)
+
+    return () => {
+      cancelAnimationFrame(animationFrameId)
+    }
+  }, [mousePosition])
+
+  // 눈 깜빡임 애니메이션
+  useEffect(() => {
+    let timer: NodeJS.Timeout
+
+    const blink = () => {
+      setIsBlinking(true)
+
+      setTimeout(() => {
+        setIsBlinking(false)
+      }, 180)
+
+      timer = setTimeout(blink, 1400 + Math.random() * 1200)
+    }
+
+    timer = setTimeout(blink, 2000)
+
+    return () => clearTimeout(timer)
+  }, [])
+
+  const typingIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const aiSectionRef = useRef<HTMLDivElement | null>(null)
+
+  // 시험 결과 애니메이션 추가
+  const analysisSectionRef = useRef<HTMLDivElement | null>(null)
+  const [isAnalysisVisible, setIsAnalysisVisible] = useState(false)
+
+  useEffect(() => {
+    const startTyping = () => {
+      if (typingIntervalRef.current) {
+        clearInterval(typingIntervalRef.current)
+      }
+
+      let index = 0
+      setTypedAnswer('')
+
+      typingIntervalRef.current = setInterval(() => {
+        setTypedAnswer(aiAnswer.slice(0, index + 1))
+        index += 1
+
+        if (index >= aiAnswer.length && typingIntervalRef.current) {
+          clearInterval(typingIntervalRef.current)
+        }
+      }, 35)
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          startTyping()
+        }
+      },
+      {
+        threshold: 0.45,
+      }
+    )
+
+    if (aiSectionRef.current) {
+      observer.observe(aiSectionRef.current)
+    }
+
+    return () => {
+      observer.disconnect()
+
+      if (typingIntervalRef.current) {
+        clearInterval(typingIntervalRef.current)
+      }
+    }
+  }, [aiAnswer])
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsAnalysisVisible(true)
+        } else {
+          setIsAnalysisVisible(false)
+        }
+      },
+      {
+        threshold: 0.35,
+      }
+    )
+
+    if (analysisSectionRef.current) {
+      observer.observe(analysisSectionRef.current)
+    }
+
+    return () => observer.disconnect()
+  }, [])
+
+  return (
+    <main className="relative min-h-screen overflow-x-hidden bg-white text-slate-900">
+      {/* 마우스를 따라오는 블러 배경 */}
+      <div
+        className="
+    pointer-events-none
+    fixed
+    z-0
+    h-[620px]
+    w-[620px]
+    rounded-full
+    bg-blue-400/15
+    blur-[120px]
+  "
+        style={{
+          left: smoothPosition.x - 310,
+          top: smoothPosition.y - 310,
+        }}
+      />
+      <div className="relative z-30 bg-white shadow-sm">
+        <Header
+          onMenuClick={() => setIsMenuOpen(!isMenuOpen)}
+          onLoginClick={() => setIsLoginOpen(true)}
+        />
+      </div>
+
+      <div className="relative z-20">
+        <Sidebar isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
+      </div>
 
       {/* 1. 메인 소개 섹션 */}
       <section
         id="start-section"
-        className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-50 px-10 pt-16"
+        className="relative z-10 flex min-h-screen items-center justify-center bg-transparent px-10 pt-16"
       >
-        <div className="grid w-full max-w-6xl grid-cols-1 items-center gap-16 lg:grid-cols-2">
-          <div className="mx-auto max-w-xl lg:ml-28">
+        <div className="grid w-full max-w-6xl grid-cols-1 items-center gap-10 lg:grid-cols-2">
+          <div className="mx-auto max-w-xl lg:ml-20">
             <h1 className="mb-6 text-5xl font-extrabold leading-tight">
               <span className="text-blue-600">AI와 함께</span>
               <br />
@@ -58,9 +217,13 @@ export default function HomePage() {
             )}
           </div>
 
-          <div className="flex translate-y-12 justify-center">
+          <div className="flex -translate-x-6 translate-y-2 justify-center">
             <Image
-              src="/images/homepage_main.png"
+              src={
+                isBlinking
+                  ? "/images/homepage_main_close.png"
+                  : "/images/homepage_main.png"
+              }
               alt="PassMate AI 메인 이미지"
               width={800}
               height={600}
@@ -72,7 +235,10 @@ export default function HomePage() {
       </section>
 
       {/* 2. 자동 분석 섹션 */}
-      <section className="flex min-h-screen flex-col items-center justify-center bg-white px-10 py-24">
+      <section
+        ref={analysisSectionRef}
+        className="relative z-10 flex min-h-screen flex-col items-center justify-center bg-transparent px-10 py-24"
+      >
         <span className="mb-4 rounded-full bg-blue-100 px-4 py-2 text-sm font-bold text-blue-600">
           자동 분석
         </span>
@@ -138,7 +304,8 @@ export default function HomePage() {
                     strokeWidth="12"
                     strokeLinecap="round"
                     strokeDasharray={327}
-                    strokeDashoffset={327 - (327 * 75) / 100}
+                    strokeDashoffset={isAnalysisVisible ? 327 - (327 * 75) / 100 : 327}
+                    className="transition-[stroke-dashoffset] duration-[1400ms] ease-out"
                   />
                 </svg>
 
@@ -168,6 +335,9 @@ export default function HomePage() {
                   strokeWidth="4"
                   strokeLinecap="round"
                   strokeLinejoin="round"
+                  strokeDasharray={isAnalysisVisible ? 420 : 0}
+                  strokeDashoffset={isAnalysisVisible ? 0 : 420}
+                  className="transition-[stroke-dashoffset] duration-[1600ms] ease-out"
                 />
 
                 {[
@@ -176,8 +346,16 @@ export default function HomePage() {
                   { x: 170, y: 42, score: 64 },
                   { x: 245, y: 32, score: 75 },
                   { x: 300, y: 24, score: 82 },
-                ].map((point) => (
-                  <g key={point.score}>
+                ].map((point, index) => (
+                  <g
+                    key={point.score}
+                    className={`transition-all duration-500 ${isAnalysisVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-75'
+                      }`}
+                    style={{
+                      transitionDelay: `${500 + index * 250}ms`,
+                      transformOrigin: `${point.x}px ${point.y}px`,
+                    }}
+                  >
                     <circle cx={point.x} cy={point.y} r="5" fill="#2563eb" />
                     <circle
                       cx={point.x}
@@ -237,7 +415,10 @@ export default function HomePage() {
       </section>
 
       {/* 3. AI 해설 섹션 */}
-      <section className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-50 px-10 py-24">
+      <section
+        ref={aiSectionRef}
+        className="relative z-10 flex min-h-screen items-center justify-center bg-transparent px-10 py-24"
+      >
         <div className="grid w-full max-w-6xl grid-cols-1 items-center gap-16 lg:grid-cols-2">
           <div>
             <span className="mb-4 inline-block rounded-full bg-purple-100 px-4 py-2 text-sm font-bold text-purple-600">
@@ -262,9 +443,9 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-purple-100 bg-white p-6 shadow-2xl shadow-blue-100">
+          <div className="rounded-[2rem] border border-blue-100 bg-white p-6 shadow-2xl shadow-blue-100">
             <div className="mb-5 flex items-center gap-3 border-b border-slate-100 pb-4">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-purple-100 font-extrabold text-purple-600">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-100 font-extrabold text-blue-600">
                 AI
               </div>
               <div>
@@ -279,22 +460,24 @@ export default function HomePage() {
 
             <div className="space-y-5">
               <div className="flex justify-end">
-                <div className="max-w-sm rounded-2xl bg-purple-500 px-5 py-3 text-white">
-                  6번 문제 답이 왜 1번이야?
+                <div className="max-w-sm rounded-3xl bg-blue-600 px-5 py-3 text-white shadow-lg">
+                  6번 문제 답 해설해줘
                 </div>
               </div>
 
-              <div className="max-w-lg rounded-3xl bg-slate-50 p-5">
-                <p className="mb-3 text-sm font-bold text-purple-600">
+              <div className="h-[260px] max-w-lg rounded-3xl bg-slate-50 p-5">
+                <p className="mb-3 text-sm font-bold text-blue-600">
                   AI 해설
                 </p>
-                <p className="leading-8 text-slate-700">
-                  1번은 문제에서 요구한 조건을 가장 정확하게 만족하는 선택지예요.
-                  <br />
-                  반면 다른 선택지는 핵심 조건이 빠져 있거나, 설명 범위가 문제의 기준과 맞지 않아요.
-                  <br />
-                  따라서 문제의 키워드를 먼저 확인한 뒤 선택지의 조건과 비교하면 정답을 더 쉽게 찾을 수 있어요.
-                </p>
+
+                <div className="h-[190px] overflow-hidden">
+                  <p className="whitespace-pre-line text-sm leading-8 text-slate-700">
+                    {typedAnswer}
+                    {typedAnswer.length < aiAnswer.length && (
+                      <span className="ml-1 animate-pulse text-blue-500">|</span>
+                    )}
+                  </p>
+                </div>
               </div>
 
               <div className="mt-6 flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3">
